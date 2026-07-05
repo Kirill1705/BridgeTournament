@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: BridgeTournament
+
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/${POSTGRES_DB}"
+    username: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
+    #drop-first: true
+bot:
+  token: "${TELEGRAM_BOT_TOKEN}"
+  username: "${TELEGRAM_BOT_USERNAME}"
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15-alpine:///test_db
+    username: test_user
+    password: test_password
+
+  liquibase:
+    drop-first: true
+    enabled: true
+
+
