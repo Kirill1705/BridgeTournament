@@ -1,16 +1,15 @@
 package thor.bridge_tournament.core.exception;
 
 import lombok.Getter;
-import thor.bridge_tournament.core.type.player.Pair;
 
 public class PairUniqueMovementException extends RuntimeException {
     @Getter
-    private final Pair first;
+    private final int first;
     @Getter
-    private final Pair second;
-    public PairUniqueMovementException(Pair first, Pair second) {
+    private final int second;
+    public PairUniqueMovementException(int first, int second) {
+        super("This two pairs can play only once");
         this.first = first;
         this.second = second;
-        super("This two pairs can play only once");
     }
 }
