@@ -2,7 +2,7 @@ package thor.bridge_tournament.core.service;
 
 import lombok.AllArgsConstructor;
 import thor.bridge_tournament.core.domain.board.BoardEntry;
-import thor.bridge_tournament.core.domain.tournament.CurrentTournamentManager;
+import thor.bridge_tournament.core.domain.CurrentTournamentManager;
 import thor.bridge_tournament.core.domain.tournament.PairWithResult;
 import thor.bridge_tournament.core.domain.tournament.Tournament;
 import thor.bridge_tournament.core.mapping.BoardEntryMapper;

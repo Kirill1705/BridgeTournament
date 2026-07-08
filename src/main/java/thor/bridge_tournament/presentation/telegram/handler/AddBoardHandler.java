@@ -1,6 +1,8 @@
 package thor.bridge_tournament.presentation.telegram.handler;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -13,13 +15,16 @@ import thor.bridge_tournament.presentation.telegram.session.UserSession;
 import java.util.Optional;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AddBoardHandler implements CommandHandler{
+    @Getter
+    private final String name = "addboard";
+
     private final BoardService boardService;
 
     @Override
     public boolean canHandle(String command) {
-        return command.equalsIgnoreCase("addboard");
+        return command.equalsIgnoreCase(name);
     }
 
     @Override
@@ -35,5 +40,10 @@ public class AddBoardHandler implements CommandHandler{
         }
         AddBoardSession session = new AddBoardSession(boardService);
         return Optional.of(session);
+    }
+
+    @Override
+    public String getDescription() {
+        return "Добавить сдачу в систему и получить её идентификатор";
     }
 }

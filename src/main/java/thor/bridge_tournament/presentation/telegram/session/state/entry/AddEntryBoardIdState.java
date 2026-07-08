@@ -11,11 +11,11 @@ import thor.bridge_tournament.presentation.telegram.session.state.SessionState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 
 @AllArgsConstructor
-public class AddEntryBoardNumberState implements SessionState<AddEntryData> {
+public class AddEntryBoardIdState implements SessionState<AddEntryData> {
 
     @Override
     public void sendInfo(TelegramClient client, long chatId, AddEntryData data) throws TelegramApiException {
-        String text = data.isTournamentDeal() ? "Введите номер сдачи" : "Введите идентификатор сдачи";
+        String text = "Введите идентификатор сдачи";
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
                 .text(text)

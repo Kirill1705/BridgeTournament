@@ -11,4 +11,8 @@ public interface CommandHandler {
     boolean canHandle(String command);
 
     Optional<UserSession> handle(Update update, TelegramClient telegramClient) throws TelegramApiException;
+
+    String getName();
+
+    String getDescription();
 }

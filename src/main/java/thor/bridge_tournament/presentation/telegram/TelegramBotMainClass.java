@@ -1,13 +1,19 @@
 package thor.bridge_tournament.presentation.telegram;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
+import org.telegram.telegrambots.meta.api.methods.commands.DeleteMyCommands;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
+import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.presentation.telegram.exception.CommandNotFoundException;
@@ -15,6 +21,8 @@ import thor.bridge_tournament.presentation.telegram.exception.ExceptionHandler;
 import thor.bridge_tournament.presentation.telegram.handler.MainCommandHandler;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +43,7 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
         this.botToken = botToken;
         this.telegramClient = new OkHttpTelegramClient(botToken);
         this.exceptionHandler = exceptionHandler;
+        initBotCommands();
     }
 
     @Override
@@ -76,6 +85,25 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
         }
         else {
             sendSessionNotFoundMessage(chatId);
+        }
+    }
+
+    private void initBotCommands() {
+        List<BotCommand> commands = handler.getHandlers().stream()
+                .map(commandHandler -> new BotCommand(commandHandler.getName(), commandHandler.getDescription()))
+                .toList();
+        try {
+            DeleteMyCommands deleteMyCommands = DeleteMyCommands.builder()
+                            .scope(new BotCommandScopeDefault())
+                            .build();
+            telegramClient.execute(deleteMyCommands);
+            SetMyCommands setMyCommands = SetMyCommands.builder()
+                    .commands(commands)
+                    .scope(new BotCommandScopeDefault())
+                    .build();
+            telegramClient.execute(setMyCommands);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
         }
     }
 

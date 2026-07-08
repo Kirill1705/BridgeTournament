@@ -1,8 +1,10 @@
-package thor.bridge_tournament.core.domain.tournament;
+package thor.bridge_tournament.core.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import thor.bridge_tournament.core.domain.player.SportCategory;
 import thor.bridge_tournament.core.domain.player.User;
+import thor.bridge_tournament.core.domain.tournament.Tournament;
 import thor.bridge_tournament.core.exception.TournamentNotFoundException;
 import thor.bridge_tournament.core.mapping.TournamentMapper;
 import thor.bridge_tournament.core.mapping.UserMapper;
@@ -14,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @AllArgsConstructor
+@Getter
 public class CurrentTournamentManager {
     private final UserRepository userRepository;
     private final CurrentTournamentRepository currentTournamentRepository;
