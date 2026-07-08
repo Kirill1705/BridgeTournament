@@ -1,32 +1,28 @@
 package thor.bridge_tournament.presentation.telegram.session;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.core.port.dto.board.PairBoardResult;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
-import thor.bridge_tournament.core.port.input.MovementService;
+import thor.bridge_tournament.core.port.input.BoardEntryService;
 import thor.bridge_tournament.presentation.html.HtmlProtocolCreator;
-import thor.bridge_tournament.presentation.telegram.TelegramUtils;
-import thor.bridge_tournament.presentation.telegram.session.state.entry.AddEntryBoardNumberState;
+import thor.bridge_tournament.presentation.telegram.session.state.entry.AddEntryBoardIdState;
+import thor.bridge_tournament.presentation.telegram.session.state.entry.AddEntryCountTypeState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 
 import java.io.File;
 
 public class AddEntrySession extends AbstractSessionWithState<AddEntryData> {
-    private final MovementService service;
+    private final BoardEntryService service;
     private final HtmlProtocolCreator protocolCreator;
     private final String username;
 
-    public AddEntrySession(Update update, TelegramClient client, boolean isTournament, MovementService service, HtmlProtocolCreator protocolCreator, String username) {
-        super(new AddEntryBoardNumberState(), update, client, new AddEntryData(isTournament));
+    public AddEntrySession(Update update, TelegramClient client, BoardEntryService service, HtmlProtocolCreator protocolCreator, String username) {
+        super(new AddEntryCountTypeState(), update, client, new AddEntryData());
         this.service = service;
         this.protocolCreator = protocolCreator;
         this.username = username;
@@ -47,11 +43,11 @@ public class AddEntrySession extends AbstractSessionWithState<AddEntryData> {
                 getData().getSign() != null ? getData().getResultInt() : 0
         );
         PairBoardResult result;
-        if (!getData().isTournamentDeal()) {
+        if (getData().getCountType().equalsIgnoreCase("IMP")) {
             result = service.addBoardEntryImps(username, getData().getBoardNumber(), entry, 0d);
         }
         else {
-            result = service.addTournamentBoardEntry(username, getData().getBoardNumber(), entry);
+            result = service.addBoardEntryMp(username, getData().getBoardNumber(), entry);
         }
         File file = protocolCreator.create(result.protocol(), "IMP");
         SendDocument document = SendDocument.builder()

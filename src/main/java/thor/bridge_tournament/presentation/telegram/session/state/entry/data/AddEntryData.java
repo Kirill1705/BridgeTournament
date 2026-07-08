@@ -10,8 +10,6 @@ import java.util.function.Function;
 @Getter
 @RequiredArgsConstructor
 public class AddEntryData {
-    private final boolean isTournamentDeal;
-
     @Setter
     private int messageId;
 
@@ -36,6 +34,9 @@ public class AddEntryData {
 
     @Setter
     private int boardNumber;
+
+    @Setter
+    private String countType;
 
     public String toFormattedString() {
         return "Контракт: " +

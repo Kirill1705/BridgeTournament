@@ -5,7 +5,7 @@ import thor.bridge_tournament.core.domain.board.Board;
 import thor.bridge_tournament.core.domain.movement.AverageBoardSelector;
 import thor.bridge_tournament.core.domain.movement.Movement;
 import thor.bridge_tournament.core.domain.tournament.CountType;
-import thor.bridge_tournament.core.domain.tournament.CurrentTournamentManager;
+import thor.bridge_tournament.core.domain.CurrentTournamentManager;
 import thor.bridge_tournament.core.domain.tournament.Tournament;
 import thor.bridge_tournament.core.domain.tournament.TournamentNode;
 import thor.bridge_tournament.core.exception.MovementNotFoundException;
@@ -30,11 +30,8 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class TournamentServiceImpl implements TournamentService {
-    private final TournamentRepository tournamentRepository;
-    private final CurrentTournamentRepository currentTournamentRepository;
     private final CurrentTournamentManager currentTournamentManager;
     private final ConfirmationSender confirmationSender;
-    private final UserRepository userRepository;
     private final TransactionalManager transactionalManager;
     private final MovementRepository movementRepository;
     private final BoardRepository boardRepository;
@@ -46,8 +43,8 @@ public class TournamentServiceImpl implements TournamentService {
         UUID ownerId = currentTournamentManager.getUserIdOrRegister(ownerUserName);
         Tournament tournament = new Tournament(ownerId, boards, rounds, CountType.fromStandardName(countType), name);
         TournamentDto tournamentDto = TournamentMapper.toDto(tournament);
-        UUID uuid = tournamentRepository.save(tournamentDto);
-        currentTournamentRepository.switchTd(uuid, ownerId);
+        UUID uuid = currentTournamentManager.getTournamentRepository().save(tournamentDto);
+        currentTournamentManager.getCurrentTournamentRepository().switchTd(uuid, ownerId);
     }
 
     @Override
@@ -55,13 +52,13 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
         UUID tdId = currentTournamentManager.getUserIdOrRegister(tdUserName);
         tournament.addTd(tdId);
-        tournamentRepository.save(TournamentMapper.toDto(tournament));
+        currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
     }
 
     @Override
     public void addPlayer(String ownerUserName, String playerUserName) {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        tournamentRepository.addPlayerWithoutPair(currentTournamentManager.getUserIdOrRegister(playerUserName), tournament.getUuid());
+        currentTournamentManager.getTournamentRepository().addPlayerWithoutPair(currentTournamentManager.getUserIdOrRegister(playerUserName), tournament.getUuid());
     }
 
     @Override
@@ -69,8 +66,8 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
         addPairToTournament(
                 tournament.getUuid(),
-                userRepository.getById(currentTournamentManager.getUserIdOrRegister(initiatorUserName)),
-                userRepository.getById(currentTournamentManager.getUserIdOrRegister(partnerUserName))
+                currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(initiatorUserName)),
+                currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(partnerUserName))
         );
     }
 
@@ -78,22 +75,22 @@ public class TournamentServiceImpl implements TournamentService {
     public List<String> getTds(String tdUserName) {
         Tournament tournament = currentTournamentManager.getByTd(tdUserName);
         return tournament.getTds().stream()
-                .map(uuid -> userRepository.getById(uuid).name())
+                .map(uuid -> currentTournamentManager.getUserRepository().getById(uuid).name())
                 .toList();
     }
 
     @Override
     public TournamentPlayers getAllPlayers(String tdUserName) {
         Tournament tournament = currentTournamentManager.getByTd(tdUserName);
-        List<UserDto> playersWithoutPairs = userRepository.filterByIds(tournamentRepository.getPlayersWithoutPair(tournament.getUuid()));
-        List<PairDto> pairs = pairRepository.filterByIds(tournamentRepository.getAllPairs(tournament.getUuid()));
+        List<UserDto> playersWithoutPairs = currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid()));
+        List<PairDto> pairs = pairRepository.filterByIds(currentTournamentManager.getTournamentRepository().getAllPairs(tournament.getUuid()));
         return new TournamentPlayers(playersWithoutPairs, pairs);
     }
 
     @Override
     public void startTournament(String ownerUserName) {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        List<UserDto> playersWithOutPair = userRepository.filterByIds(tournamentRepository.getPlayersWithoutPair(tournament.getUuid()));
+        List<UserDto> playersWithOutPair = currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid()));
         if (playersWithOutPair.size() % 2 != 0) {
             confirmationSender.oddNumberOfPlayers(playersWithOutPair.removeLast().username(), tournament.getName());
         }
@@ -101,10 +98,10 @@ public class TournamentServiceImpl implements TournamentService {
             for (int i = 0; i < playersWithOutPair.size(); i += 2) {
                 addPairToTournament(tournament.getUuid(), playersWithOutPair.get(i), playersWithOutPair.get(i + 1));
             }
-            tournamentRepository.removePlayersWithOutPairs(tournament.getUuid());
+            currentTournamentManager.getTournamentRepository().removePlayersWithOutPairs(tournament.getUuid());
         });
 
-        List<PairDto> pairs = pairRepository.filterByIds(tournamentRepository.getAllPairs(tournament.getUuid()));
+        List<PairDto> pairs = pairRepository.filterByIds(currentTournamentManager.getTournamentRepository().getAllPairs(tournament.getUuid()));
         int pairsCount = pairs.size() % 2 == 0 ? pairs.size() : pairs.size() + 1;
         Optional<MovementDto> movementDto = movementRepository.find(pairsCount, tournament.getPossibleRoundsQuantity());
         if (movementDto.isEmpty()) {
@@ -119,7 +116,7 @@ public class TournamentServiceImpl implements TournamentService {
         transactionalManager.executeTransactional(() -> {
             tournamentGamesRepository.addNodes(tournamentNodes);
             tournament.start();
-            tournamentRepository.save(TournamentMapper.toDto(tournament));
+            currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
         });
     }
 
@@ -150,6 +147,6 @@ public class TournamentServiceImpl implements TournamentService {
     private void addPairToTournament(UUID tournamentId, UserDto firstPlayer, UserDto secondPlayer) {
         PairDto pair = new PairDto(null, firstPlayer, secondPlayer);
         UUID pairId = pairRepository.addPair(pair);
-        tournamentRepository.addPair(pairId, tournamentId);
+        currentTournamentManager.getTournamentRepository().addPair(pairId, tournamentId);
     }
 }

@@ -71,7 +71,7 @@ public class ContractAddEntryState extends AbstractAddEntryState {
 
     @Override
     protected void revert(SessionWithState<AddEntryData> session) {
-        session.updateState(new AddEntryBoardNumberState());
+        session.updateState(new AddEntryBoardIdState());
     }
 
     private boolean nextState(SessionWithState<AddEntryData> session) {

@@ -1,6 +1,8 @@
 package thor.bridge_tournament.presentation.telegram.handler;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -14,14 +16,17 @@ import thor.bridge_tournament.presentation.telegram.session.UserSession;
 import java.util.Optional;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AddMovementHandler implements CommandHandler {
+    @Getter
+    private final String name = "addmovement";
+
     private final TelegramFileUtils fileUtils;
     private final MovementService movementService;
 
     @Override
     public boolean canHandle(String command) {
-        return command.equalsIgnoreCase("addmovement");
+        return command.equalsIgnoreCase(name);
     }
 
     @Override
@@ -39,5 +44,10 @@ public class AddMovementHandler implements CommandHandler {
 
         AddMovementSession session = new AddMovementSession(movementService, fileUtils);
         return Optional.of(session);
+    }
+
+    @Override
+    public String getDescription() {
+        return "Добавить движение для турнира в формате JSON";
     }
 }

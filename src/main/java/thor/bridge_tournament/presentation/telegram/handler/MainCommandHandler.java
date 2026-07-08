@@ -1,6 +1,7 @@
 package thor.bridge_tournament.presentation.telegram.handler;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -14,6 +15,7 @@ import java.util.Optional;
 @Component
 @AllArgsConstructor
 public class MainCommandHandler {
+    @Getter
     private final List<CommandHandler> handlers;
 
     public Optional<UserSession> handle(Update update, TelegramClient telegramClient, String command) throws CommandNotFoundException, TelegramApiException {

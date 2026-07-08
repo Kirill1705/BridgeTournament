@@ -15,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final TransactionalManager transactionalManager;
+
     @Override
     public void register(UserDto userDto) {
         User user = UserMapper.fromDto(userDto);
