@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-rename-tournament-pairs
+      author: thor
+      changes:
+        - renameTable:
+            oldTableName: tournamens_pairs
+            newTableName: tournament_pairs
+      rollback:
+        - renameTable:
+            oldTableName: tournament_pairs
+            newTableName: tournamens_pairs

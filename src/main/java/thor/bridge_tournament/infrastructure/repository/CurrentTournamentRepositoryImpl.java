@@ -28,12 +28,18 @@ public class CurrentTournamentRepositoryImpl implements CurrentTournamentReposit
     @Override
     @Transactional
     public void switchTd(UUID tournamentId, UUID tdId) {
-        repository.save(new CurrentTournamentEntity(tdId, tournamentId, null));
+        CurrentTournamentEntity current = repository.findById(tdId)
+                .orElseGet(() -> new CurrentTournamentEntity(tdId, null, null));
+        current.setTdId(tournamentId);
+        repository.save(current);
     }
 
     @Override
     @Transactional
     public void switchPlayer(UUID tournamentId, UUID playerId) {
-        repository.save(new CurrentTournamentEntity(playerId, null, tournamentId));
+        CurrentTournamentEntity current = repository.findById(playerId)
+                .orElseGet(() -> new CurrentTournamentEntity(playerId, null, null));
+        current.setPlayerId(tournamentId);
+        repository.save(current);
     }
 }

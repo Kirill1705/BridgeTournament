@@ -27,14 +27,14 @@ public class Movement {
             throw new DomainValidationException("Movement body shouldn't be empty");
         }
         for (MovementBodyNode node: body) {
-            if (node.ns() <= 0 || node.ew() <= 0) {
-                throw new DomainValidationException("Pair number should be greater then zero");
+            if (node.ns() <= 0 || node.ew() <= 0 || node.ns() > pairsCount || node.ew() > pairsCount) {
+                throw new DomainValidationException("Pair number should be between 1 and pairs count");
             }
-            if (node.boardSetNumber() < 0) {
-                throw new DomainValidationException("Number of board set should be not negative");
+            if (node.boardSetNumber() <= 0 || node.boardSetNumber() > roundsCount) {
+                throw new DomainValidationException("Board set number should be between 1 and rounds count");
             }
-            if (node.roundNumber() < 0) {
-                throw new DomainValidationException("Round number should be not negative");
+            if (node.roundNumber() <= 0 || node.roundNumber() > roundsCount) {
+                throw new DomainValidationException("Round number should be between 1 and rounds count");
             }
         }
         if (pairsCount < 2) {
@@ -46,15 +46,22 @@ public class Movement {
     }
 
     public List<TournamentNode> scheduleTournament(BoardSelector selector, List<PairDto> pairs, UUID tournamentId) {
+        if (pairs.size() != pairsCount && !(pairsCount % 2 == 0 && pairs.size() == pairsCount - 1)) {
+            throw new DomainValidationException("Pairs count does not match the movement");
+        }
         List<TournamentNode> nodes = new ArrayList<>();
         for (MovementBodyNode movementNode: body) {
+            // The last pair is a bye when the tournament has an odd number of pairs.
+            if (movementNode.ns() > pairs.size() || movementNode.ew() > pairs.size()) {
+                continue;
+            }
             nodes.add(new TournamentNode(
                     null,
                     tournamentId,
                     movementNode.roundNumber(),
                     movementNode.tableNumber(),
-                    selector.select(movementNode.roundNumber()),
-                    pairs.get(movementNode.ns()), pairs.get(movementNode.ew())
+                    selector.select(movementNode.boardSetNumber() - 1),
+                    pairs.get(movementNode.ns() - 1), pairs.get(movementNode.ew() - 1)
             ));
         }
         return nodes;

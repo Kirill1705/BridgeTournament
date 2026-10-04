@@ -21,7 +21,7 @@ public class MpTournamentCalculator implements TournamentCalculator {
                         Collectors.averagingDouble(Map.Entry::getValue)
                 )).entrySet().stream()
                 .map(entry -> new PairWithResult(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparingDouble(PairWithResult::result))
+                .sorted(Comparator.comparingDouble(PairWithResult::result).reversed())
                 .toList();
     }
 }

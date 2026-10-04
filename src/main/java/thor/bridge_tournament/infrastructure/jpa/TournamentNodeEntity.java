@@ -16,6 +16,7 @@ import java.util.UUID;
 public class TournamentNodeEntity {
     @Id
     @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "tournament_id")
@@ -24,7 +25,7 @@ public class TournamentNodeEntity {
     @Column(name = "round")
     private int round;
 
-    @Column(name = "table")
+    @Column(name = "\"table\"")
     private int table;
 
     @ManyToOne

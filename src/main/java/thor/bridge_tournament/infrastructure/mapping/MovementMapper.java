@@ -13,9 +13,9 @@ public class MovementMapper {
     public static MovementDto toDto(MovementEntity entity) {
         return new MovementDto(
                 entity.getType(),
-                entity.getPairsCount(),
                 entity.getRoundsCount(),
-                mapFromJson(entity.getBody(), entity.getPairsCount() * 2)
+                entity.getPairsCount(),
+                mapFromJson(entity.getBody(), entity.getPairsCount() / 2)
         );
     }
 

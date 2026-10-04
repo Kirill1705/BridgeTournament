@@ -47,7 +47,7 @@ public class MedianImpsCalculator implements BoardCalculator {
 
     private int countAverage(List<BoardEntry> entries) {
         List<BoardEntry> realEntries = entries.stream()
-                .sorted(Comparator.comparingInt(BoardEntry::getResult))
+                .sorted(Comparator.comparingInt(BoardEntry::getPoints))
                 .toList();
         int throwCount = (int) (realEntries.size() * throwAway);
         int count = realEntries.size() - throwCount * 2;

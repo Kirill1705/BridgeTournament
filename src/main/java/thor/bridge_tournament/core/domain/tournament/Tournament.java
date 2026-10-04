@@ -75,7 +75,7 @@ public class Tournament {
 
     public List<Board> generateBoards(Set<Integer> usedBoardNumbers) {
         List<Board> boardList = new ArrayList<>();
-        for (int i = 0; i < boards; i++) {
+        for (int i = 1; i <= boards; i++) {
             if (!usedBoardNumbers.contains(i)) {
                 boardList.add(new Board(i));
             }

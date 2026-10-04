@@ -21,7 +21,7 @@ public class ImpTournamentCalculator implements TournamentCalculator {
                         Collectors.summingDouble(Map.Entry::getValue)
                 )).entrySet().stream()
                 .map(entry -> new PairWithResult(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparingDouble(PairWithResult::result))
+                .sorted(Comparator.comparingDouble(PairWithResult::result).reversed())
                 .toList();
     }
 }

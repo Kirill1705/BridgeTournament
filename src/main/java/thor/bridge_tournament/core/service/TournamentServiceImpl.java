@@ -58,17 +58,21 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     public void addPlayer(String ownerUserName, String playerUserName) {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        currentTournamentManager.getTournamentRepository().addPlayerWithoutPair(currentTournamentManager.getUserIdOrRegister(playerUserName), tournament.getUuid());
+        UUID playerId = currentTournamentManager.getUserIdOrRegister(playerUserName);
+        transactionalManager.executeTransactional(() -> {
+            currentTournamentManager.getTournamentRepository().addPlayerWithoutPair(playerId, tournament.getUuid());
+            currentTournamentManager.getCurrentTournamentRepository().switchPlayer(tournament.getUuid(), playerId);
+        });
     }
 
     @Override
     public void addPair(String ownerUserName, String initiatorUserName, String partnerUserName) {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        addPairToTournament(
+        transactionalManager.executeTransactional(() -> addPairToTournament(
                 tournament.getUuid(),
                 currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(initiatorUserName)),
                 currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(partnerUserName))
-        );
+        ));
     }
 
     @Override
@@ -90,7 +94,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     public void startTournament(String ownerUserName) {
         Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        List<UserDto> playersWithOutPair = currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid()));
+        List<UserDto> playersWithOutPair = new ArrayList<>(currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid())));
         if (playersWithOutPair.size() % 2 != 0) {
             confirmationSender.oddNumberOfPlayers(playersWithOutPair.removeLast().username(), tournament.getName());
         }
@@ -117,6 +121,9 @@ public class TournamentServiceImpl implements TournamentService {
             tournamentGamesRepository.addNodes(tournamentNodes);
             tournament.start();
             currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
+            for (PairDto pair : pairs) {
+                activatePair(tournament.getUuid(), pair.firstPlayer(), pair.secondPlayer());
+            }
         });
     }
 
@@ -129,13 +136,13 @@ public class TournamentServiceImpl implements TournamentService {
                 .collect(Collectors.toSet()));
         transactionalManager.executeTransactional(() -> {
             for (Board board: added) {
-                boardRepository.save(BoardMapper.toDto(board));
-                boardRepository.addBoardToTournament(board.getId(), tournament.getUuid());
+                int boardId = boardRepository.save(BoardMapper.toDto(board));
+                boardRepository.addBoardToTournament(boardId, tournament.getUuid());
             }
         });
         List<Board> allBoards = new ArrayList<>(alreadyAdded);
         allBoards.addAll(added);
-        return allBoards.stream().map(Board::getNumber).toList();
+        return allBoards.stream().map(Board::getNumber).sorted().toList();
     }
 
     @Override
@@ -148,5 +155,11 @@ public class TournamentServiceImpl implements TournamentService {
         PairDto pair = new PairDto(null, firstPlayer, secondPlayer);
         UUID pairId = pairRepository.addPair(pair);
         currentTournamentManager.getTournamentRepository().addPair(pairId, tournamentId);
+        activatePair(tournamentId, firstPlayer, secondPlayer);
+    }
+
+    private void activatePair(UUID tournamentId, UserDto firstPlayer, UserDto secondPlayer) {
+        currentTournamentManager.getCurrentTournamentRepository().switchPlayer(tournamentId, firstPlayer.id());
+        currentTournamentManager.getCurrentTournamentRepository().switchPlayer(tournamentId, secondPlayer.id());
     }
 }

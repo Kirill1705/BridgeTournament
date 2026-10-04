@@ -37,8 +37,11 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
     @Query("""
         SELECT tnb FROM TournamentNodeEntity tn
         JOIN tn.boards tnb
-        LEFT JOIN TournamentNodeEntryEntity tne ON tne.id.nodeId = tn.id
-        WHERE tn.id = :nodeId AND tne.id.boardEntryId IS NULL
+        WHERE tn.id = :nodeId AND NOT EXISTS (
+            SELECT tne.id.boardEntryId FROM TournamentNodeEntryEntity tne
+            JOIN BoardEntryEntity be ON be.id = tne.id.boardEntryId
+            WHERE tne.id.nodeId = tn.id AND be.board.number = tnb
+        )
         ORDER BY tnb
         """)
     List<Integer> findNotPlayedDeals(UUID nodeId);
@@ -49,9 +52,14 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
         LEFT JOIN FETCH tn.ew
         LEFT JOIN tn.ns pns
         LEFT JOIN tn.ew pew
-        WHERE (pns.firstPlayer.id = :playerId OR pns.secondPlayer.id = :playerId OR pew.firstPlayer.id = :playerId OR pew.secondPlayer.id = :playerId) AND tn.tournamentId = :tournamentId AND tn.id NOT IN (
-            SELECT tne.id.nodeId FROM TournamentNodeEntryEntity tne
-            WHERE tne.id.boardEntryId IS NOT NULL
+        WHERE (pns.firstPlayer.id = :playerId OR pns.secondPlayer.id = :playerId OR pew.firstPlayer.id = :playerId OR pew.secondPlayer.id = :playerId) AND tn.tournamentId = :tournamentId AND EXISTS (
+            SELECT tnb FROM TournamentNodeEntity pendingNode
+            JOIN pendingNode.boards tnb
+            WHERE pendingNode.id = tn.id AND NOT EXISTS (
+                SELECT tne.id.boardEntryId FROM TournamentNodeEntryEntity tne
+                JOIN BoardEntryEntity be ON be.id = tne.id.boardEntryId
+                WHERE tne.id.nodeId = tn.id AND be.board.number = tnb
+            )
         )
         ORDER BY tn.round
         """)

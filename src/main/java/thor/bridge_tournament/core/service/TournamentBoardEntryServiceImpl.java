@@ -35,7 +35,7 @@ public class TournamentBoardEntryServiceImpl implements TournamentBoardEntryServ
         Optional<TournamentNode> node = tournamentNodeRepository.findNode(playerId, tournament.getUuid(), boardNumber);
         return transactionalManager.executeTransactional(() -> {
             PairBoardResult result = boardEntryManager.addBoardEntry(userName, boardDto.get().id(), entry, tournament.getCountType().createCalculator(), node.get().ns(), node.get().ew(), tournament.getCountType().getFormatStandardName());
-            tournamentNodeRepository.addEntry(result.entryId(), node.get().id());
+            tournamentNodeRepository.addEntry(node.get().id(), result.entryId());
             return result;
         });
     }
