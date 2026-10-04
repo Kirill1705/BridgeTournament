@@ -5,13 +5,11 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import thor.bridge_tournament.core.port.dto.UserDto;
 import thor.bridge_tournament.core.port.output.repository.UserRepository;
-import thor.bridge_tournament.infrastructure.jpa.UserEntity;
 import thor.bridge_tournament.infrastructure.jpa.repository.UserJpaRepository;
 import thor.bridge_tournament.infrastructure.mapping.UserMapper;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -29,11 +27,6 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public List<UserDto> allPlayers() {
         return repository.findAll().stream().map(mapper::toDto).toList();
-    }
-
-    @Override
-    public Optional<UUID> getByUserName(String userName) {
-        return repository.findByUsername(userName).map(UserEntity::getId);
     }
 
     @Override

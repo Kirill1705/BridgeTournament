@@ -39,8 +39,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final PairRepository pairRepository;
 
     @Override
-    public void createTournament(String ownerUserName, int boards, String countType, String name, Integer rounds) {
-        UUID ownerId = currentTournamentManager.getUserIdOrRegister(ownerUserName);
+    public void createTournament(UUID ownerId, int boards, String countType, String name, Integer rounds) {
         Tournament tournament = new Tournament(ownerId, boards, rounds, CountType.fromStandardName(countType), name);
         TournamentDto tournamentDto = TournamentMapper.toDto(tournament);
         UUID uuid = currentTournamentManager.getTournamentRepository().save(tournamentDto);
@@ -48,17 +47,15 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
-    public void addTournamentDirector(String ownerUserName, String tdUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        UUID tdId = currentTournamentManager.getUserIdOrRegister(tdUserName);
+    public void addTournamentDirector(UUID ownerId, UUID tdId) {
+        Tournament tournament = currentTournamentManager.getByTd(ownerId);
         tournament.addTd(tdId);
         currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
     }
 
     @Override
-    public void addPlayer(String ownerUserName, String playerUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
-        UUID playerId = currentTournamentManager.getUserIdOrRegister(playerUserName);
+    public void addPlayer(UUID ownerId, UUID playerId) {
+        Tournament tournament = currentTournamentManager.getByTd(ownerId);
         transactionalManager.executeTransactional(() -> {
             currentTournamentManager.getTournamentRepository().addPlayerWithoutPair(playerId, tournament.getUuid());
             currentTournamentManager.getCurrentTournamentRepository().switchPlayer(tournament.getUuid(), playerId);
@@ -66,37 +63,37 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
-    public void addPair(String ownerUserName, String initiatorUserName, String partnerUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
+    public void addPair(UUID ownerId, UUID initiatorId, UUID partnerId) {
+        Tournament tournament = currentTournamentManager.getByTd(ownerId);
         transactionalManager.executeTransactional(() -> addPairToTournament(
                 tournament.getUuid(),
-                currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(initiatorUserName)),
-                currentTournamentManager.getUserRepository().getById(currentTournamentManager.getUserIdOrRegister(partnerUserName))
+                currentTournamentManager.getUserRepository().getById(initiatorId),
+                currentTournamentManager.getUserRepository().getById(partnerId)
         ));
     }
 
     @Override
-    public List<String> getTds(String tdUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(tdUserName);
+    public List<String> getTds(UUID tdId) {
+        Tournament tournament = currentTournamentManager.getByTd(tdId);
         return tournament.getTds().stream()
                 .map(uuid -> currentTournamentManager.getUserRepository().getById(uuid).name())
                 .toList();
     }
 
     @Override
-    public TournamentPlayers getAllPlayers(String tdUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(tdUserName);
+    public TournamentPlayers getAllPlayers(UUID tdId) {
+        Tournament tournament = currentTournamentManager.getByTd(tdId);
         List<UserDto> playersWithoutPairs = currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid()));
         List<PairDto> pairs = pairRepository.filterByIds(currentTournamentManager.getTournamentRepository().getAllPairs(tournament.getUuid()));
         return new TournamentPlayers(playersWithoutPairs, pairs);
     }
 
     @Override
-    public void startTournament(String ownerUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(ownerUserName);
+    public void startTournament(UUID ownerId) {
+        Tournament tournament = currentTournamentManager.getByTd(ownerId);
         List<UserDto> playersWithOutPair = new ArrayList<>(currentTournamentManager.getUserRepository().filterByIds(currentTournamentManager.getTournamentRepository().getPlayersWithoutPair(tournament.getUuid())));
         if (playersWithOutPair.size() % 2 != 0) {
-            confirmationSender.oddNumberOfPlayers(playersWithOutPair.removeLast().username(), tournament.getName());
+            confirmationSender.oddNumberOfPlayers(playersWithOutPair.removeLast().id(), tournament.getName());
         }
         transactionalManager.executeTransactional(() -> {
             for (int i = 0; i < playersWithOutPair.size(); i += 2) {
@@ -146,8 +143,8 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
-    public void addBoardToTournament(int boardId, String tdUserName) {
-        Tournament tournament = currentTournamentManager.getByTd(tdUserName);
+    public void addBoardToTournament(int boardId, UUID tdId) {
+        Tournament tournament = currentTournamentManager.getByTd(tdId);
         boardRepository.addBoardToTournament(boardId, tournament.getUuid());
     }
 

@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changeset/001-create-base-tables.sql
   - include:
       file: db/changelog/changeset/002-rename-tournament-pairs.yaml
+  - include:
+      file: db/changelog/changeset/003-external-accounts.sql

@@ -8,9 +8,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.core.port.input.UserService;
 import thor.bridge_tournament.presentation.telegram.session.RegisterSession;
+import thor.bridge_tournament.presentation.telegram.TelegramUtils;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -26,8 +28,8 @@ public class RegisterCommandHandler implements CommandHandler{
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) {
-        RegisterSession session = new RegisterSession(update, telegramClient, service);
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) {
+        RegisterSession session = new RegisterSession(update, telegramClient, service, userId, TelegramUtils.getUser(update).getUserName());
         return Optional.of(session);
     }
 

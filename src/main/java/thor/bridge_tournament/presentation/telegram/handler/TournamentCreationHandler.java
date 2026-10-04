@@ -11,6 +11,7 @@ import thor.bridge_tournament.presentation.telegram.session.TournamentCreationSe
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -25,8 +26,8 @@ public class TournamentCreationHandler implements CommandHandler {
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) {
-        TournamentCreationSession session = new TournamentCreationSession(service, update, telegramClient);
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) {
+        TournamentCreationSession session = new TournamentCreationSession(service, update, telegramClient, userId);
         return Optional.of(session);
     }
 

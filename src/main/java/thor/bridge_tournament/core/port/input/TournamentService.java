@@ -3,21 +3,22 @@ package thor.bridge_tournament.core.port.input;
 import thor.bridge_tournament.core.port.dto.tournament.TournamentPlayers;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface TournamentService {
-    void createTournament(String ownerUserName, int boards, String countType, String name, Integer rounds);
+    void createTournament(UUID ownerId, int boards, String countType, String name, Integer rounds);
 
-    void addTournamentDirector(String ownerUserName, String tdUserName);
+    void addTournamentDirector(UUID ownerId, UUID tdId);
 
-    void addPlayer(String ownerUserName, String playerUserName);
+    void addPlayer(UUID ownerId, UUID playerId);
 
-    void addPair(String ownerUserName, String initiatorUserName, String partnerUserName);
+    void addPair(UUID ownerId, UUID initiatorId, UUID partnerId);
 
-    List<String> getTds(String tdUserName);
+    List<String> getTds(UUID tdId);
 
-    TournamentPlayers getAllPlayers(String tdUserName);
+    TournamentPlayers getAllPlayers(UUID tdId);
 
-    void startTournament(String ownerUserName);
+    void startTournament(UUID ownerId);
 
-    void addBoardToTournament(int boardId, String tdUserName);
+    void addBoardToTournament(int boardId, UUID tdId);
 }

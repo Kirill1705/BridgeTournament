@@ -42,14 +42,13 @@ public class MovementServiceImpl implements MovementService {
 
 
     @Override
-    public List<PairMovementEntryDto> getMovementCard(String userName) {
-        Tournament tournament = currentTournamentManager.getByPlayerId(userName);
-        UUID playerId = currentTournamentManager.getUserIdOrRegister(userName);
-        List<TournamentNode> nodes = tournamentGamesRepository.getAllMovementsForPlayer(playerId, tournament.getUuid());
+    public List<PairMovementEntryDto> getMovementCard(UUID userId) {
+        Tournament tournament = currentTournamentManager.getByPlayerId(userId);
+        List<TournamentNode> nodes = tournamentGamesRepository.getAllMovementsForPlayer(userId, tournament.getUuid());
         return nodes.stream()
                 .map(node -> new PairMovementEntryDto(
                         node.round(),
-                        getOpponents(node, playerId),
+                        getOpponents(node, userId),
                         node.table(),
                         node.boards()
                 ))
@@ -57,11 +56,10 @@ public class MovementServiceImpl implements MovementService {
     }
 
     @Override
-    public PairMovementNextRoundInfo getMovementNextRound(String userName) {
-        Tournament tournament = currentTournamentManager.getByPlayerId(userName);
-        UUID playerId = currentTournamentManager.getUserIdOrRegister(userName);
-        Optional<TournamentNode> node = tournamentGamesRepository.findNextNodeForPlayer(playerId, tournament.getUuid());
-        PairDto opponents = getOpponents(node.get(), playerId);
+    public PairMovementNextRoundInfo getMovementNextRound(UUID userId) {
+        Tournament tournament = currentTournamentManager.getByPlayerId(userId);
+        Optional<TournamentNode> node = tournamentGamesRepository.findNextNodeForPlayer(userId, tournament.getUuid());
+        PairDto opponents = getOpponents(node.get(), userId);
         return new PairMovementNextRoundInfo(new PairMovementEntryDto(
                 node.get().round(),
                 opponents,

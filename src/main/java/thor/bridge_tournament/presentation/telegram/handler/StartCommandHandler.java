@@ -10,6 +10,7 @@ import thor.bridge_tournament.presentation.telegram.TelegramUtils;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class StartCommandHandler implements CommandHandler{
@@ -22,7 +23,7 @@ public class StartCommandHandler implements CommandHandler{
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) throws TelegramApiException {
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) throws TelegramApiException {
         SendMessage message = SendMessage.builder()
                 .chatId(TelegramUtils.getChatId(update))
                 .text("Это бот для проведения турниров и ведения протокола для спортивного Бриджа")

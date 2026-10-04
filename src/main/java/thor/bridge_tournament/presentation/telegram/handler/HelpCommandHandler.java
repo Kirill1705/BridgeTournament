@@ -12,6 +12,7 @@ import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class HelpCommandHandler implements CommandHandler {
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) throws TelegramApiException {
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) throws TelegramApiException {
         StringBuilder builder = new StringBuilder();
         for (CommandHandler command : commands) {
             builder.append("/").append(command.getName()).append(" - ").append(command.getDescription()).append("\n");

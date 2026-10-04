@@ -30,10 +30,9 @@ public class BoardEntryManager {
     private final BoardEntryRepository boardEntryRepository;
     private final BoardRepository boardRepository;
 
-    public PairBoardResult addBoardEntry(String username, int boardId, RawBoardEntry entry, BoardCalculator calculator, PairDto ns, PairDto ew, String countType) {
-        UUID playerId = currentTournamentManager.getUserIdOrRegister(username);
-        UserDto player = currentTournamentManager.getUserRepository().getById(playerId);
-        UUID boardEntryId = boardEntryRepository.getEntryId(playerId, boardId).orElse(null);
+    public PairBoardResult addBoardEntry(UUID userId, int boardId, RawBoardEntry entry, BoardCalculator calculator, PairDto ns, PairDto ew, String countType) {
+        UserDto player = currentTournamentManager.getUserRepository().getById(userId);
+        UUID boardEntryId = boardEntryRepository.getEntryId(userId, boardId).orElse(null);
         Optional<BoardDto> boardDtoOpt = boardRepository.getById(boardId);
         if (boardDtoOpt.isEmpty()) {
             throw new BoardNotFoundException(boardId);

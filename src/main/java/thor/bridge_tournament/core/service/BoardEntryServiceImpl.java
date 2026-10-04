@@ -10,20 +10,22 @@ import thor.bridge_tournament.core.port.dto.board.PairBoardResult;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
 import thor.bridge_tournament.core.port.input.BoardEntryService;
 
+import java.util.UUID;
+
 @AllArgsConstructor
 public class BoardEntryServiceImpl implements BoardEntryService {
     private final BoardEntryManager boardEntryManager;
 
     @Override
-    public PairBoardResult addBoardEntryImps(String username, int boardId, RawBoardEntry entry, Double throwAwayPercent) {
+    public PairBoardResult addBoardEntryImps(UUID userId, int boardId, RawBoardEntry entry, Double throwAwayPercent) {
         if (throwAwayPercent == null) {
             throwAwayPercent = 0d;
         }
-        return boardEntryManager.addBoardEntry(username, boardId, entry, new MedianImpsCalculator(throwAwayPercent, ImpTranslationScale.createDefault()), null, null, CountType.MEDIAN_IMPS.getFormatStandardName());
+        return boardEntryManager.addBoardEntry(userId, boardId, entry, new MedianImpsCalculator(throwAwayPercent, ImpTranslationScale.createDefault()), null, null, CountType.MEDIAN_IMPS.getFormatStandardName());
     }
 
     @Override
-    public PairBoardResult addBoardEntryMp(String username, int boardId, RawBoardEntry entry) {
+    public PairBoardResult addBoardEntryMp(UUID userId, int boardId, RawBoardEntry entry) {
         throw new NotImplementedException();
     }
 }

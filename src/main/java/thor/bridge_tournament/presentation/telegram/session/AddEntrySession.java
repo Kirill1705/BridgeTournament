@@ -15,17 +15,18 @@ import thor.bridge_tournament.presentation.telegram.session.state.entry.AddEntry
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 
 import java.io.File;
+import java.util.UUID;
 
 public class AddEntrySession extends AbstractSessionWithState<AddEntryData> {
     private final BoardEntryService service;
     private final HtmlProtocolCreator protocolCreator;
-    private final String username;
+    private final UUID userId;
 
-    public AddEntrySession(Update update, TelegramClient client, BoardEntryService service, HtmlProtocolCreator protocolCreator, String username) {
+    public AddEntrySession(Update update, TelegramClient client, BoardEntryService service, HtmlProtocolCreator protocolCreator, UUID userId) {
         super(new AddEntryCountTypeState(), update, client, new AddEntryData());
         this.service = service;
         this.protocolCreator = protocolCreator;
-        this.username = username;
+        this.userId = userId;
     }
 
     @Override
@@ -44,10 +45,10 @@ public class AddEntrySession extends AbstractSessionWithState<AddEntryData> {
         );
         PairBoardResult result;
         if (getData().getCountType().equalsIgnoreCase("IMP")) {
-            result = service.addBoardEntryImps(username, getData().getBoardNumber(), entry, 0d);
+            result = service.addBoardEntryImps(userId, getData().getBoardNumber(), entry, 0d);
         }
         else {
-            result = service.addBoardEntryMp(username, getData().getBoardNumber(), entry);
+            result = service.addBoardEntryMp(userId, getData().getBoardNumber(), entry);
         }
         File file = protocolCreator.create(result.protocol(), "IMP");
         SendDocument document = SendDocument.builder()

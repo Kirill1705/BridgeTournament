@@ -13,6 +13,8 @@ import thor.bridge_tournament.core.port.dto.board.PairBoardResult;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
 import thor.bridge_tournament.core.port.input.BoardEntryService;
 import thor.bridge_tournament.core.port.input.BoardService;
+import thor.bridge_tournament.core.port.input.UserService;
+import thor.bridge_tournament.core.port.dto.UserDto;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -25,6 +27,8 @@ import thor.bridge_tournament.core.port.input.BoardService;
 })
 public class EntryTests {
     @Autowired
+    private UserService userService;
+    @Autowired
     private BoardEntryService boardEntryService;
 
     @Autowired
@@ -35,8 +39,8 @@ public class EntryTests {
         int boardId = boardService.addBoard(1);
         RawBoardEntry firstEntry = new RawBoardEntry("4S", "N", "cK", 1);
         RawBoardEntry secondEntry = new RawBoardEntry("3S", "N", "cK", 1);
-        boardEntryService.addBoardEntryImps("user1", boardId, firstEntry, 0d);
-        PairBoardResult result = boardEntryService.addBoardEntryImps("user2", boardId, secondEntry, 0d);
+        boardEntryService.addBoardEntryImps(userService.register(new UserDto(null, "user1", null, null, 5.0)), boardId, firstEntry, 0d);
+        PairBoardResult result = boardEntryService.addBoardEntryImps(userService.register(new UserDto(null, "user2", null, null, 5.0)), boardId, secondEntry, 0d);
         Assertions.assertEquals(170, result.points());
         Assertions.assertEquals(-4, result.duplicatePoints());
     }

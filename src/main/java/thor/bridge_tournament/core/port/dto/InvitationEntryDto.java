@@ -4,8 +4,8 @@ import java.util.UUID;
 
 public record InvitationEntryDto(
         UUID uuid,
-        String initiatorUserName,
-        String userName,
+        UUID initiatorId,
+        UUID userId,
         UUID tournamentId
 ) {
 }

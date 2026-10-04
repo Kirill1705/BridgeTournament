@@ -41,6 +41,11 @@ public class ServiceConfig {
     }
 
     @Bean
+    public UserIdentityService userIdentityService(ExternalAccountRepository externalAccountRepository, UserRepository userRepository, TransactionalManager transactionalManager) {
+        return new UserIdentityServiceImpl(externalAccountRepository, userRepository, transactionalManager);
+    }
+
+    @Bean
     public UserService userService(UserRepository userRepository) {
         return new UserServiceImpl(userRepository);
     }

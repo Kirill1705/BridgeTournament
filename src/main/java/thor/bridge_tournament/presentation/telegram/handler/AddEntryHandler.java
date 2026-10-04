@@ -17,6 +17,7 @@ import thor.bridge_tournament.presentation.telegram.session.AddEntrySession;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -33,8 +34,8 @@ public class AddEntryHandler implements CommandHandler {
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) {
-        AddEntrySession session = new AddEntrySession(update, telegramClient, service, creator, update.getMessage().getFrom().getUserName());
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) {
+        AddEntrySession session = new AddEntrySession(update, telegramClient, service, creator, userId);
         return Optional.of(session);
     }
 

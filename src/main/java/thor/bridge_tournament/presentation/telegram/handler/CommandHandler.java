@@ -6,11 +6,12 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface CommandHandler {
     boolean canHandle(String command);
 
-    Optional<UserSession> handle(Update update, TelegramClient telegramClient) throws TelegramApiException;
+    Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) throws TelegramApiException;
 
     String getName();
 

@@ -13,6 +13,7 @@ import thor.bridge_tournament.presentation.telegram.session.AddBoardSession;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class AddBoardHandler implements CommandHandler{
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) {
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) {
         SendMessage message = SendMessage.builder()
                 .chatId(update.getMessage().getChatId())
                 .text("Введите номер сдачи")

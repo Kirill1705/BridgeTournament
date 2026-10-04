@@ -4,6 +4,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 import thor.bridge_tournament.core.port.dto.board.BoardEntryDto;
+import thor.bridge_tournament.core.port.dto.UserDto;
 import thor.bridge_tournament.core.port.dto.tournament.PairDto;
 
 import java.io.File;
@@ -69,7 +70,7 @@ public class HtmlProtocolCreator {
         row.appendElement("td").text(String.valueOf(duplicatePoints));
         row.appendElement("td").text(convertPair(boardEntry.ns()));
         row.appendElement("td").text(convertPair(boardEntry.ew()));
-        row.appendElement("td").text(boardEntry.writer().username());
+        row.appendElement("td").text(formatUser(boardEntry.writer()));
     }
 
     private String convertResult(int result) {
@@ -85,7 +86,16 @@ public class HtmlProtocolCreator {
         if (pair == null) {
             return "";
         }
-        return pair.firstPlayer().username() + " & " + pair.secondPlayer().username();
+        return formatUser(pair.firstPlayer()) + " & " + formatUser(pair.secondPlayer());
+    }
+
+    private String formatUser(UserDto user) {
+        if (user.username() != null && !user.username().isBlank()) {
+            return user.username();
+        }
+        String name = ((user.name() == null ? "" : user.name()) + " " +
+                (user.surname() == null ? "" : user.surname())).trim();
+        return name.isEmpty() ? user.id().toString() : name;
     }
 
     private Element createStyles(Document document) {

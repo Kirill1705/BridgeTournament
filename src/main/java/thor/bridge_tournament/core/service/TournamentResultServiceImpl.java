@@ -13,6 +13,7 @@ import thor.bridge_tournament.core.port.output.repository.BoardEntryRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @AllArgsConstructor
 public class TournamentResultServiceImpl implements TournamentResultService {
@@ -20,8 +21,8 @@ public class TournamentResultServiceImpl implements TournamentResultService {
     private final BoardEntryRepository boardEntryRepository;
 
     @Override
-    public List<PairTournamentResultDto> getRanks(String userName) {
-        Tournament tournament = currentTournamentManager.getByPlayerId(userName);
+    public List<PairTournamentResultDto> getRanks(UUID userId) {
+        Tournament tournament = currentTournamentManager.getByPlayerId(userId);
         List<BoardEntry> entries = boardEntryRepository.findByTournamentId(tournament.getUuid()).stream()
                 .map(BoardEntryMapper::fromDto)
                 .toList();

@@ -25,16 +25,15 @@ public class TournamentBoardEntryServiceImpl implements TournamentBoardEntryServ
     private final BoardEntryManager boardEntryManager;
 
     @Override
-    public PairBoardResult addTournamentBoardEntry(String userName, int boardNumber, RawBoardEntry entry) {
-        UUID playerId = currentTournamentManager.getUserIdOrRegister(userName);
-        Tournament tournament = currentTournamentManager.getByPlayerId(userName);
+    public PairBoardResult addTournamentBoardEntry(UUID userId, int boardNumber, RawBoardEntry entry) {
+        Tournament tournament = currentTournamentManager.getByPlayerId(userId);
         Optional<BoardDto> boardDto = boardEntryManager.getBoardRepository().findByTournament(tournament.getUuid(), boardNumber);
         if (boardDto.isEmpty()) {
             throw new BoardNotFoundException(boardNumber);
         }
-        Optional<TournamentNode> node = tournamentNodeRepository.findNode(playerId, tournament.getUuid(), boardNumber);
+        Optional<TournamentNode> node = tournamentNodeRepository.findNode(userId, tournament.getUuid(), boardNumber);
         return transactionalManager.executeTransactional(() -> {
-            PairBoardResult result = boardEntryManager.addBoardEntry(userName, boardDto.get().id(), entry, tournament.getCountType().createCalculator(), node.get().ns(), node.get().ew(), tournament.getCountType().getFormatStandardName());
+            PairBoardResult result = boardEntryManager.addBoardEntry(userId, boardDto.get().id(), entry, tournament.getCountType().createCalculator(), node.get().ns(), node.get().ew(), tournament.getCountType().getFormatStandardName());
             tournamentNodeRepository.addEntry(node.get().id(), result.entryId());
             return result;
         });

@@ -14,6 +14,7 @@ import thor.bridge_tournament.presentation.telegram.session.AddMovementSession;
 import thor.bridge_tournament.presentation.telegram.session.UserSession;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class AddMovementHandler implements CommandHandler {
     }
 
     @Override
-    public Optional<UserSession> handle(Update update, TelegramClient telegramClient) {
+    public Optional<UserSession> handle(Update update, TelegramClient telegramClient, UUID userId) {
         long chatId = update.getMessage().getChatId();
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)

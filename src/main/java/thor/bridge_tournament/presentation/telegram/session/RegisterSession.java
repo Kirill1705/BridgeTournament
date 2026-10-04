@@ -9,19 +9,23 @@ import thor.bridge_tournament.core.port.input.UserService;
 import thor.bridge_tournament.presentation.telegram.session.state.register.NameRegisterState;
 import thor.bridge_tournament.presentation.telegram.session.state.register.RegisterStateData;
 
+import java.util.UUID;
+
 public class RegisterSession extends AbstractSessionWithState<RegisterStateData> {
     private final UserService service;
     private final String username;
+    private final UUID userId;
 
-    public RegisterSession(Update update, TelegramClient client, UserService service) {
+    public RegisterSession(Update update, TelegramClient client, UserService service, UUID userId, String username) {
         super(new NameRegisterState(), update, client, new RegisterStateData());
         this.service = service;
-        this.username = update.getMessage().getFrom().getUserName();
+        this.username = username;
+        this.userId = userId;
     }
 
     @Override
     protected void finishInteractiveChain(long chatId, TelegramClient client) throws TelegramApiException {
-        service.register(new UserDto(null, username, getData().getName(), getData().getSurname(), getData().getSportCategory()));
+        service.register(new UserDto(userId, username, getData().getName(), getData().getSurname(), getData().getSportCategory()));
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
                 .text("Успешная регистрация")

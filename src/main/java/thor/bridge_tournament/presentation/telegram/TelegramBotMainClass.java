@@ -36,7 +36,7 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
 
     private final ExceptionHandler exceptionHandler;
 
-    private final Map<Long, UserSession> sessions = new ConcurrentHashMap<>();
+    private final Map<SessionKey, UserSession> sessions = new ConcurrentHashMap<>();
 
     public TelegramBotMainClass(@Value("${bot.token}") String botToken, MainCommandHandler handler, ExceptionHandler exceptionHandler) {
         this.handler = handler;
@@ -58,12 +58,16 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
 
     @Override
     public void consume(Update update) {
+        if (!update.hasMessage() && !update.hasCallbackQuery()) {
+            return;
+        }
         Optional<String> text = getText(update);
         long chatId = TelegramUtils.getChatId(update);
+        SessionKey sessionKey = new SessionKey(chatId, TelegramUtils.getUser(update).getId());
         if (text.isPresent() && text.get().startsWith("/")) {
             try {
                 Optional<UserSession> session = handler.handle(update, telegramClient, text.get().substring(1));
-                session.ifPresent(userSession -> sessions.put(chatId, userSession));
+                session.ifPresent(userSession -> sessions.put(sessionKey, userSession));
             } catch (CommandNotFoundException e) {
                 sendUnknownCommandMessage(update.getMessage().getChatId());
             }
@@ -72,11 +76,11 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
                 throw new RuntimeException(e);
             }
         }
-        else if (sessions.containsKey(chatId)) {
-            UserSession session = sessions.get(chatId);
+        else if (sessions.containsKey(sessionKey)) {
+            UserSession session = sessions.get(sessionKey);
             try {
                 if (session.handleMessage(update, telegramClient)) {
-                    sessions.remove(chatId);
+                    sessions.remove(sessionKey);
                 }
             } catch (Exception e) {
                 sendMessage(chatId, exceptionHandler.handle(e));
@@ -87,6 +91,8 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
             sendSessionNotFoundMessage(chatId);
         }
     }
+
+    private record SessionKey(long chatId, long telegramUserId) {}
 
     private void initBotCommands() {
         List<BotCommand> commands = handler.getHandlers().stream()

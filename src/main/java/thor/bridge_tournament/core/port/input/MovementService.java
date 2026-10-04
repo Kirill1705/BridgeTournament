@@ -7,11 +7,12 @@ import thor.bridge_tournament.core.port.dto.movement.PairMovementEntryDto;
 import thor.bridge_tournament.core.port.dto.movement.PairMovementNextRoundInfo;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface MovementService {
-    List<PairMovementEntryDto> getMovementCard(String userName);
+    List<PairMovementEntryDto> getMovementCard(UUID userId);
 
-    PairMovementNextRoundInfo getMovementNextRound(String userName);
+    PairMovementNextRoundInfo getMovementNextRound(UUID userId);
 
     void addMovement(MovementDto movementDto);
 }
