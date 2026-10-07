@@ -3,6 +3,7 @@ package thor.bridge_tournament.core.port.output.repository;
 import thor.bridge_tournament.core.domain.identity.ExternalIdentity;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public interface ExternalAccountRepository {
@@ -10,4 +11,7 @@ public interface ExternalAccountRepository {
     Optional<UUID> findUserIdForUpdate(ExternalIdentity identity);
 
     void link(ExternalIdentity identity, UUID userId);
+
+    /** Updates the provider-scoped username and returns accounts whose stale username was released. */
+    List<UUID> updateUsername(ExternalIdentity identity, String username);
 }

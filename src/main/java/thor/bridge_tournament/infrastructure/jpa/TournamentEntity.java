@@ -37,7 +37,7 @@ public class TournamentEntity extends BaseEntity {
     @Column(name = "started")
     private boolean started;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "tournament_tds",
             joinColumns = @JoinColumn(name = "tournament_id")

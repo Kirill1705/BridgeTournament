@@ -28,15 +28,15 @@ public class TournamentNodeEntity {
     @Column(name = "\"table\"")
     private int table;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ns")
     private PairEntity ns;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ew")
     private PairEntity ew;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "tournament_node_boards",
             joinColumns = @JoinColumn(name = "node_id")

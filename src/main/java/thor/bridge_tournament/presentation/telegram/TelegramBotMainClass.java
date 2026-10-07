@@ -65,11 +65,16 @@ public class TelegramBotMainClass implements SpringLongPollingBot, LongPollingSi
         long chatId = TelegramUtils.getChatId(update);
         SessionKey sessionKey = new SessionKey(chatId, TelegramUtils.getUser(update).getId());
         if (text.isPresent() && text.get().startsWith("/")) {
+            String command = text.get().substring(1);
+            if (!handler.isAddressedToThisBot(command)) {
+                return;
+            }
             try {
-                Optional<UserSession> session = handler.handle(update, telegramClient, text.get().substring(1));
+                sessions.remove(sessionKey);
+                Optional<UserSession> session = handler.handle(update, telegramClient, command);
                 session.ifPresent(userSession -> sessions.put(sessionKey, userSession));
             } catch (CommandNotFoundException e) {
-                sendUnknownCommandMessage(update.getMessage().getChatId());
+                sendUnknownCommandMessage(chatId);
             }
             catch (Exception e) {
                 sendMessage(chatId, exceptionHandler.handle(e));

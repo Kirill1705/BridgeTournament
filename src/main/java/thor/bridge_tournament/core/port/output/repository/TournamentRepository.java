@@ -14,9 +14,13 @@ public interface TournamentRepository {
 
     void addPair(UUID pair, UUID tournamentId);
 
+    void removePair(UUID pair, UUID tournamentId);
+
     List<UUID> getPlayersWithoutPair(UUID tournamentId);
 
     List<UUID> getAllPairs(UUID tournamentId);
 
     void removePlayersWithOutPairs(UUID tournamentId);
+
+    void removePlayersWithoutPair(UUID tournamentId, List<UUID> playerIds);
 }

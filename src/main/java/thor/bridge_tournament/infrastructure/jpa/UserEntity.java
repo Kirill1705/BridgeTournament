@@ -27,6 +27,9 @@ public class UserEntity extends BaseEntity {
     @Column(name = "username")
     private String username;
 
+    @Column(name = "registration_provider", nullable = false, length = 32)
+    private String registrationProvider = "TELEGRAM";
+
     @Column(name = "sport_category", columnDefinition = "numeric")
     private double sportCategory;
 }

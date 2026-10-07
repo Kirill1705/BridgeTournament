@@ -9,6 +9,7 @@ import thor.bridge_tournament.core.domain.CurrentTournamentManager;
 import thor.bridge_tournament.core.domain.tournament.Tournament;
 import thor.bridge_tournament.core.domain.tournament.TournamentNode;
 import thor.bridge_tournament.core.exception.MovementNotFoundException;
+import thor.bridge_tournament.core.exception.DomainValidationException;
 import thor.bridge_tournament.core.mapping.BoardMapper;
 import thor.bridge_tournament.core.mapping.MovementMapper;
 import thor.bridge_tournament.core.mapping.TournamentMapper;
@@ -50,7 +51,10 @@ public class TournamentServiceImpl implements TournamentService {
     public void addTournamentDirector(UUID ownerId, UUID tdId) {
         Tournament tournament = currentTournamentManager.getByTd(ownerId);
         tournament.addTd(tdId);
-        currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
+        transactionalManager.executeTransactional(() -> {
+            currentTournamentManager.getTournamentRepository().save(TournamentMapper.toDto(tournament));
+            currentTournamentManager.getCurrentTournamentRepository().switchTd(tournament.getUuid(), tdId);
+        });
     }
 
     @Override
@@ -64,20 +68,63 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     public void addPair(UUID ownerId, UUID initiatorId, UUID partnerId) {
-        Tournament tournament = currentTournamentManager.getByTd(ownerId);
-        transactionalManager.executeTransactional(() -> addPairToTournament(
-                tournament.getUuid(),
-                currentTournamentManager.getUserRepository().getById(initiatorId),
-                currentTournamentManager.getUserRepository().getById(partnerId)
-        ));
+        transactionalManager.executeTransactional(() -> {
+            Tournament tournament = currentTournamentManager.getByTd(ownerId);
+            if (!tournament.getTds().contains(ownerId)) {
+                throw new DomainValidationException("Добавлять пары может только судья турнира");
+            }
+            if (tournament.isStarted()) {
+                throw new DomainValidationException("Нельзя добавлять пары после начала турнира");
+            }
+            if (initiatorId.equals(partnerId)) {
+                throw new DomainValidationException("В паре должны быть два разных игрока");
+            }
+            var pairs = pairRepository.filterByIds(currentTournamentManager.getTournamentRepository().getAllPairs(tournament.getUuid()));
+            if (pairs.stream().anyMatch(pair -> pair.firstPlayer().id().equals(initiatorId)
+                    || pair.secondPlayer().id().equals(initiatorId) || pair.firstPlayer().id().equals(partnerId)
+                    || pair.secondPlayer().id().equals(partnerId))) {
+                throw new DomainValidationException("Один из игроков уже состоит в паре этого турнира");
+            }
+            addPairToTournament(tournament.getUuid(), currentTournamentManager.getUserRepository().getById(initiatorId),
+                    currentTournamentManager.getUserRepository().getById(partnerId));
+        });
     }
 
     @Override
-    public List<String> getTds(UUID tdId) {
+    public List<UserDto> removePlayer(UUID tdId, UUID playerId) {
+        return transactionalManager.executeTransactional(() -> {
+            Tournament tournament = currentTournamentManager.getByTd(tdId);
+            if (!tournament.getTds().contains(tdId)) {
+                throw new DomainValidationException("Удалять участников может только судья турнира");
+            }
+            if (tournament.isStarted()) {
+                throw new DomainValidationException("Нельзя удалять участников после начала турнира");
+            }
+            var repository = currentTournamentManager.getTournamentRepository();
+            var pair = pairRepository.filterByIds(repository.getAllPairs(tournament.getUuid())).stream()
+                    .filter(candidate -> candidate.firstPlayer().id().equals(playerId)
+                            || candidate.secondPlayer().id().equals(playerId)).findFirst();
+            List<UUID> removedIds;
+            if (pair.isPresent()) {
+                var selected = pair.get();
+                removedIds = List.of(selected.firstPlayer().id(), selected.secondPlayer().id()).stream().distinct().toList();
+                repository.removePair(selected.id(), tournament.getUuid());
+            } else {
+                if (!repository.getPlayersWithoutPair(tournament.getUuid()).contains(playerId)) {
+                    throw new DomainValidationException("Этот игрок не участвует в текущем турнире");
+                }
+                removedIds = List.of(playerId);
+            }
+            repository.removePlayersWithoutPair(tournament.getUuid(), removedIds);
+            currentTournamentManager.getCurrentTournamentRepository().clearPlayers(tournament.getUuid(), removedIds);
+            return currentTournamentManager.getUserRepository().filterByIds(removedIds);
+        });
+    }
+
+    @Override
+    public List<UserDto> getTds(UUID tdId) {
         Tournament tournament = currentTournamentManager.getByTd(tdId);
-        return tournament.getTds().stream()
-                .map(uuid -> currentTournamentManager.getUserRepository().getById(uuid).name())
-                .toList();
+        return currentTournamentManager.getUserRepository().filterByIds(tournament.getTds());
     }
 
     @Override
@@ -152,6 +199,8 @@ public class TournamentServiceImpl implements TournamentService {
         PairDto pair = new PairDto(null, firstPlayer, secondPlayer);
         UUID pairId = pairRepository.addPair(pair);
         currentTournamentManager.getTournamentRepository().addPair(pairId, tournamentId);
+        currentTournamentManager.getTournamentRepository().removePlayersWithoutPair(
+                tournamentId, List.of(firstPlayer.id(), secondPlayer.id()));
         activatePair(tournamentId, firstPlayer, secondPlayer);
     }
 

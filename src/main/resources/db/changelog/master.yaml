@@ -5,3 +5,7 @@ databaseChangeLog:
       file: db/changelog/changeset/002-rename-tournament-pairs.yaml
   - include:
       file: db/changelog/changeset/003-external-accounts.sql
+  - include:
+      file: db/changelog/changeset/004-provider-usernames.sql
+  - include:
+      file: db/changelog/changeset/005-user-provider-uniqueness.sql

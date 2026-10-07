@@ -5,7 +5,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import thor.bridge_tournament.core.port.dto.board.BoardEntryDto;
 import thor.bridge_tournament.core.port.output.repository.BoardEntryRepository;
-import thor.bridge_tournament.infrastructure.jpa.BoardEntryEntity;
 import thor.bridge_tournament.infrastructure.jpa.repository.BoardEntryJpaRepository;
 import thor.bridge_tournament.infrastructure.mapping.BoardEntryMapper;
 
@@ -21,7 +20,7 @@ public class BoardEntryRepositoryImpl implements BoardEntryRepository {
 
     @Override
     public Optional<UUID> getEntryId(UUID writerId, int boardId) {
-        return repository.findByWriterIdAndBoardId(writerId, boardId).map(BoardEntryEntity::getId);
+        return repository.findEntryIdByWriterIdAndBoardId(writerId, boardId);
     }
 
     @Override
@@ -37,6 +36,7 @@ public class BoardEntryRepositoryImpl implements BoardEntryRepository {
 
     @Override
     public List<BoardEntryDto> findByTournamentId(UUID tournamentId) {
-        return repository.findByTournamentId(tournamentId).stream().map(mapper::toDto).toList();
+        return repository.findAllById(repository.findIdsByTournamentId(tournamentId))
+                .stream().map(mapper::toDto).toList();
     }
 }

@@ -9,6 +9,7 @@ import thor.bridge_tournament.infrastructure.jpa.repository.CurrentTournamentJpa
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Repository
 @AllArgsConstructor
@@ -41,5 +42,11 @@ public class CurrentTournamentRepositoryImpl implements CurrentTournamentReposit
                 .orElseGet(() -> new CurrentTournamentEntity(playerId, null, null));
         current.setPlayerId(tournamentId);
         repository.save(current);
+    }
+
+    @Override
+    @Transactional
+    public void clearPlayers(UUID tournamentId, List<UUID> playerIds) {
+        repository.clearPlayers(tournamentId, playerIds);
     }
 }

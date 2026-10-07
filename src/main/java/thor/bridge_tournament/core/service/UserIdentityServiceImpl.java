@@ -20,18 +20,34 @@ public class UserIdentityServiceImpl implements UserIdentityService {
     @Override
     public UUID resolveOrRegister(ExternalIdentity identity, String username) {
         Objects.requireNonNull(identity, "External identity is required");
+        String normalizedUsername = username == null ? null : username.strip().replaceFirst("^@+", "");
+        String currentUsername = normalizedUsername == null || normalizedUsername.isBlank() ? null : normalizedUsername;
         return transactionalManager.executeTransactional(() -> {
             var existingId = externalAccountRepository.findUserIdForUpdate(identity);
             if (existingId.isPresent()) {
                 var user = userRepository.getById(existingId.get());
-                if (!Objects.equals(user.username(), username)) {
-                    userRepository.addUser(new UserDto(user.id(), username, user.name(), user.surname(), user.sportCategory()));
+                userRepository.releaseUsername(identity.provider(), currentUsername, user.id());
+                if (!Objects.equals(user.username(), currentUsername)) {
+                    userRepository.addUser(new UserDto(user.id(), currentUsername, user.name(), user.surname(), user.sportCategory()));
                 }
+                updateUsername(identity, currentUsername, user.id());
                 return user.id();
             }
-            UUID userId = userRepository.addUser(new UserDto(null, username, null, null, 5.0));
+            userRepository.releaseUsername(identity.provider(), currentUsername, null);
+            UUID userId = userRepository.addUser(new UserDto(null, currentUsername, null, null, 5.0), identity.provider());
             externalAccountRepository.link(identity, userId);
+            updateUsername(identity, currentUsername, userId);
             return userId;
         });
+    }
+
+    private void updateUsername(ExternalIdentity identity, String username, UUID userId) {
+        var displaced = externalAccountRepository.updateUsername(identity, username);
+        for (var user : userRepository.filterByIds(displaced)) {
+            if (!user.id().equals(userId) && user.username() != null
+                    && user.username().strip().replaceFirst("^@+", "").equalsIgnoreCase(username)) {
+                userRepository.addUser(new UserDto(user.id(), null, user.name(), user.surname(), user.sportCategory()));
+            }
+        }
     }
 }

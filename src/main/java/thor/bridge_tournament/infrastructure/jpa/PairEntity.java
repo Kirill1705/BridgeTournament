@@ -18,11 +18,11 @@ public class PairEntity {
     @Column(name = "id")
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "first_player_id")
     private UserEntity firstPlayer;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "second_player_id")
     private UserEntity secondPlayer;
 }

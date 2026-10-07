@@ -2,6 +2,7 @@ package thor.bridge_tournament.infrastructure.mapping;
 
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import thor.bridge_tournament.core.port.dto.UserDto;
 import thor.bridge_tournament.infrastructure.jpa.UserEntity;
@@ -11,5 +12,6 @@ public interface UserMapper {
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.ERROR)
     UserDto toDto(UserEntity entity);
 
+    @Mapping(target = "registrationProvider", ignore = true)
     UserEntity toJpa(UserDto dto);
 }

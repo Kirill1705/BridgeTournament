@@ -10,6 +10,7 @@ import thor.bridge_tournament.core.domain.identity.ExternalIdentity;
 import thor.bridge_tournament.core.port.output.repository.ExternalAccountRepository;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -35,5 +36,23 @@ public class ExternalAccountRepositoryImpl implements ExternalAccountRepository 
         entityManager.flush();
         jdbcTemplate.update("INSERT INTO external_accounts(provider, external_id, user_id) VALUES (?, ?, ?)",
                 identity.provider().name(), identity.externalId(), userId);
+    }
+
+    @Override
+    public List<UUID> updateUsername(ExternalIdentity identity, String username) {
+        // Serialize alias transfers before flushing profile changes, including simultaneous renames.
+        jdbcTemplate.queryForObject("SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(?, 0))",
+                Integer.class, "usernames:" + identity.provider().name());
+        entityManager.flush();
+        var displaced = username == null ? List.<UUID>of() : jdbcTemplate.query("""
+                UPDATE external_accounts SET username = NULL
+                WHERE provider = ? AND external_id <> ?
+                    AND lower(ltrim(btrim(username), '@')) = lower(?)
+                RETURNING user_id
+                """, (rs, row) -> rs.getObject("user_id", UUID.class),
+                identity.provider().name(), identity.externalId(), username);
+        jdbcTemplate.update("UPDATE external_accounts SET username = ? WHERE provider = ? AND external_id = ?",
+                username, identity.provider().name(), identity.externalId());
+        return displaced;
     }
 }

@@ -1,6 +1,7 @@
 package thor.bridge_tournament.core.port.input;
 
 import thor.bridge_tournament.core.port.dto.tournament.TournamentPlayers;
+import thor.bridge_tournament.core.port.dto.UserDto;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +15,9 @@ public interface TournamentService {
 
     void addPair(UUID ownerId, UUID initiatorId, UUID partnerId);
 
-    List<String> getTds(UUID tdId);
+    List<UserDto> removePlayer(UUID tdId, UUID playerId);
+
+    List<UserDto> getTds(UUID tdId);
 
     TournamentPlayers getAllPlayers(UUID tdId);
 

@@ -21,6 +21,25 @@ import static org.mockito.Mockito.*;
 
 class TelegramIdentityTests {
     @Test
+    void groupCommandSuffixIsNormalizedAndCommandsForOtherBotsAreIgnored() throws Exception {
+        var identities = mock(UserIdentityService.class);
+        var command = mock(CommandHandler.class);
+        var client = mock(TelegramClient.class);
+        var userId = UUID.randomUUID();
+        var update = TournamentCommandsTests.message("/ADDTD@BridgeTournamentBot");
+        when(identities.resolveOrRegister(any(), isNull())).thenReturn(userId);
+        when(command.canHandle("addtd")).thenReturn(true);
+        when(command.handle(update, client, userId)).thenReturn(Optional.empty());
+        var dispatcher = new MainCommandHandler(List.of(command), identities);
+
+        assertFalse(dispatcher.isAddressedToThisBot("addtd@OtherBot"));
+        assertTrue(dispatcher.handle(update, client, "addtd@OtherBot").isEmpty());
+        verifyNoInteractions(identities, command, client);
+        dispatcher.handle(update, client, "ADDTD@BridgeTournamentBot");
+        verify(command).handle(update, client, userId);
+    }
+
+    @Test
     void commandResolvesNumericTelegramIdAndPassesInternalUuidToHandler() throws Exception {
         var sender = new User(5_000_000_001L, "Player", false);
         sender.setUserName(null);

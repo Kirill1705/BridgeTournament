@@ -2,6 +2,7 @@ package thor.bridge_tournament.core.service;
 
 import lombok.AllArgsConstructor;
 import thor.bridge_tournament.core.domain.player.User;
+import thor.bridge_tournament.core.domain.identity.IdentityProvider;
 import thor.bridge_tournament.core.mapping.UserMapper;
 import thor.bridge_tournament.core.port.dto.UserDto;
 import thor.bridge_tournament.core.port.input.UserService;
@@ -26,5 +27,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getAllPlayers() {
         return userRepository.allPlayers();
+    }
+
+    @Override
+    public List<UserDto> findByUsername(IdentityProvider provider, String username) {
+        return userRepository.findByUsername(provider, username);
     }
 }

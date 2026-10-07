@@ -14,10 +14,13 @@ import java.util.UUID;
 public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNodeEntity, UUID> {
     @Query("""
         SELECT DISTINCT tn FROM TournamentNodeEntity tn
-        LEFT JOIN FETCH tn.ns
-        LEFT JOIN FETCH tn.ew
-        LEFT JOIN tn.ns pns
-        LEFT JOIN tn.ew pew
+        LEFT JOIN FETCH tn.ns pns
+        LEFT JOIN FETCH pns.firstPlayer
+        LEFT JOIN FETCH pns.secondPlayer
+        LEFT JOIN FETCH tn.ew pew
+        LEFT JOIN FETCH pew.firstPlayer
+        LEFT JOIN FETCH pew.secondPlayer
+        LEFT JOIN FETCH tn.boards
         WHERE (pns.firstPlayer.id = :playerId OR pns.secondPlayer.id = :playerId OR pew.firstPlayer.id = :playerId OR pew.secondPlayer.id = :playerId) AND tn.tournamentId = :tournamentId
         ORDER BY tn.round
         """)
@@ -25,10 +28,12 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
 
     @Query("""
         SELECT tn FROM TournamentNodeEntity tn
-        LEFT JOIN FETCH tn.ns
-        LEFT JOIN FETCH tn.ew
-        LEFT JOIN tn.ns pns
-        LEFT JOIN tn.ew pew
+        LEFT JOIN FETCH tn.ns pns
+        LEFT JOIN FETCH pns.firstPlayer
+        LEFT JOIN FETCH pns.secondPlayer
+        LEFT JOIN FETCH tn.ew pew
+        LEFT JOIN FETCH pew.firstPlayer
+        LEFT JOIN FETCH pew.secondPlayer
         JOIN tn.boards tnb
         WHERE (pns.firstPlayer.id = :playerId OR pns.secondPlayer.id = :playerId OR pew.firstPlayer.id = :playerId OR pew.secondPlayer.id = :playerId) AND tn.tournamentId = :tournamentId AND tnb = :boardNumber
         """)
@@ -48,10 +53,12 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
 
     @Query("""
         SELECT tn FROM TournamentNodeEntity tn
-        LEFT JOIN FETCH tn.ns
-        LEFT JOIN FETCH tn.ew
-        LEFT JOIN tn.ns pns
-        LEFT JOIN tn.ew pew
+        LEFT JOIN FETCH tn.ns pns
+        LEFT JOIN FETCH pns.firstPlayer
+        LEFT JOIN FETCH pns.secondPlayer
+        LEFT JOIN FETCH tn.ew pew
+        LEFT JOIN FETCH pew.firstPlayer
+        LEFT JOIN FETCH pew.secondPlayer
         WHERE (pns.firstPlayer.id = :playerId OR pns.secondPlayer.id = :playerId OR pew.firstPlayer.id = :playerId OR pew.secondPlayer.id = :playerId) AND tn.tournamentId = :tournamentId AND EXISTS (
             SELECT tnb FROM TournamentNodeEntity pendingNode
             JOIN pendingNode.boards tnb

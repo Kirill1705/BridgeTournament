@@ -10,14 +10,23 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.chat.Chat;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.core.domain.CurrentTournamentManager;
+import thor.bridge_tournament.core.domain.identity.ExternalIdentity;
+import thor.bridge_tournament.core.domain.identity.IdentityProvider;
 import thor.bridge_tournament.core.domain.movement.MovementBodyNode;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
 import thor.bridge_tournament.core.port.dto.movement.MovementDto;
 import thor.bridge_tournament.core.port.input.*;
 import thor.bridge_tournament.core.port.output.repository.*;
 import thor.bridge_tournament.core.port.dto.UserDto;
+import thor.bridge_tournament.presentation.telegram.handler.AddTournamentPairHandler;
+import thor.bridge_tournament.presentation.telegram.handler.AddTournamentPlayerHandler;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,6 +45,7 @@ import java.util.stream.IntStream;
 class TournamentTests {
     @Autowired private TournamentService tournaments;
     @Autowired private UserService users;
+    @Autowired private UserIdentityService identities;
     private final Map<String, UUID> userIds = new HashMap<>();
     @Autowired private BoardService boards;
     @Autowired private MovementService movements;
@@ -128,6 +138,101 @@ class TournamentTests {
 
     private UUID user(String label) {
         return userIds.computeIfAbsent(label, name -> users.register(new UserDto(null, name, null, null, 5.0)));
+    }
+
+    @Test
+    void returnsDirectorProfilesAndActivatesTournamentForNewDirector() {
+        UUID owner = users.register(new UserDto(null, "owner", "Анна", "Орлова", 1.0));
+        UUID director = users.register(new UserDto(null, null, "Борис", "Иванов", 2.0));
+        tournaments.createTournament(owner, 2, "IMP", "Directors", 1);
+        UUID tournamentId = current.getByTd(owner).getUuid();
+
+        tournaments.addTournamentDirector(owner, director);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertEquals(tournamentId, current.getByTd(director).getUuid());
+        var profiles = tournaments.getTds(director).stream().collect(java.util.stream.Collectors.toMap(UserDto::id, profile -> profile));
+        assertEquals(java.util.Set.of(owner, director), profiles.keySet());
+        assertEquals("Анна", profiles.get(owner).name());
+        assertEquals("Иванов", profiles.get(director).surname());
+        assertNull(profiles.get(director).username());
+    }
+
+    @Test
+    void pairingRegisteredPlayersRemovesOnlyThemFromWaitingListAndDoesNotPairThemAgain() {
+        UUID owner = user("owner");
+        tournaments.createTournament(owner, 2, "IMP", "Pairs", 1);
+        var playerIds = IntStream.rangeClosed(1, 4).mapToObj(i -> user("p" + i)).toList();
+        playerIds.forEach(playerId -> tournaments.addPlayer(owner, playerId));
+        UUID otherOwner = user("otherOwner");
+        tournaments.createTournament(otherOwner, 2, "IMP", "Other", 1);
+        tournaments.addPlayer(otherOwner, playerIds.getFirst());
+
+        tournaments.addPair(owner, playerIds.get(0), playerIds.get(1));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertEquals(java.util.Set.of(playerIds.get(2), playerIds.get(3)), tournaments.getAllPlayers(owner)
+                .playersWithOutPair().stream().map(UserDto::id).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(playerIds.getFirst(), tournaments.getAllPlayers(otherOwner).playersWithOutPair().getFirst().id());
+        movements.addMovement(new MovementDto("howell", 1, 2, List.of(new MovementBodyNode(1, 2, 1, 1, 0))));
+        tournaments.startTournament(owner);
+
+        var participants = tournaments.getAllPlayers(owner);
+        assertEquals(2, participants.pairs().size());
+        assertTrue(participants.playersWithOutPair().isEmpty());
+        assertEquals(java.util.Set.copyOf(playerIds), participants.pairs().stream()
+                .flatMap(pair -> java.util.stream.Stream.of(pair.firstPlayer().id(), pair.secondPlayer().id()))
+                .collect(java.util.stream.Collectors.toSet()));
+    }
+
+    @Test
+    void playerCommandsJoinTheNamedDirectorsTournamentWithInitiatorAsFirstPlayer() throws Exception {
+        UUID owner = user("owner");
+        UUID director = identities.resolveOrRegister(new ExternalIdentity(IdentityProvider.TELEGRAM, "900000001"), "director");
+        UUID initiator = user("initiator");
+        UUID partner = identities.resolveOrRegister(new ExternalIdentity(IdentityProvider.TELEGRAM, "900000002"), "partner");
+        tournaments.createTournament(owner, 2, "IMP", "Target tournament", 1);
+        tournaments.addTournamentDirector(owner, director);
+        UUID targetTournament = current.getByTd(director).getUuid();
+        tournaments.createTournament(initiator, 2, "IMP", "Initiator's own tournament", 1);
+        UUID ownTournament = current.getByTd(initiator).getUuid();
+        var client = mock(TelegramClient.class);
+
+        var singleSession = new AddTournamentPlayerHandler(tournaments, users)
+                .handle(message("/addplayer"), client, initiator).orElseThrow();
+        assertTrue(singleSession.handleMessage(message("@DIRECTOR"), client));
+        assertEquals(targetTournament, current.getByPlayerId(initiator).getUuid());
+        assertEquals(ownTournament, current.getByTd(initiator).getUuid());
+        assertEquals(List.of(initiator), tournaments.getAllPlayers(owner).playersWithOutPair().stream().map(UserDto::id).toList());
+
+        tournaments.addPlayer(owner, partner);
+        var pairSession = new AddTournamentPairHandler(tournaments, users)
+                .handle(message("/addpair"), client, initiator).orElseThrow();
+        assertFalse(pairSession.handleMessage(message("director"), client));
+        assertTrue(pairSession.handleMessage(message("@partner"), client));
+        entityManager.flush();
+        entityManager.clear();
+
+        var participants = tournaments.getAllPlayers(owner);
+        assertTrue(participants.playersWithOutPair().isEmpty());
+        assertEquals(1, participants.pairs().size());
+        assertEquals(initiator, participants.pairs().getFirst().firstPlayer().id());
+        assertEquals(partner, participants.pairs().getFirst().secondPlayer().id());
+        assertEquals(targetTournament, current.getByPlayerId(initiator).getUuid());
+        assertEquals(targetTournament, current.getByPlayerId(partner).getUuid());
+        assertEquals(ownTournament, current.getByTd(initiator).getUuid());
+        assertTrue(tournaments.getAllPlayers(initiator).pairs().isEmpty());
+    }
+
+    private Update message(String text) {
+        var message = new Message();
+        message.setChat(new Chat(100L, "private"));
+        message.setText(text);
+        var update = new Update();
+        update.setMessage(message);
+        return update;
     }
 
     private MovementDto readHowell6() throws Exception {

@@ -41,6 +41,12 @@ public class TournamentRepositoryImpl implements TournamentRepository {
     }
 
     @Override
+    @Transactional
+    public void removePair(UUID pair, UUID tournamentId) {
+        repository.removePairFromTournament(tournamentId, pair);
+    }
+
+    @Override
     public List<UUID> getPlayersWithoutPair(UUID tournamentId) {
         return repository.getAllPlayers(tournamentId);
     }
@@ -54,5 +60,11 @@ public class TournamentRepositoryImpl implements TournamentRepository {
     @Transactional
     public void removePlayersWithOutPairs(UUID tournamentId) {
         repository.removeAllPlayers(tournamentId);
+    }
+
+    @Override
+    @Transactional
+    public void removePlayersWithoutPair(UUID tournamentId, List<UUID> playerIds) {
+        repository.removePlayers(tournamentId, playerIds);
     }
 }

@@ -20,6 +20,11 @@ public interface TournamentJpaRepository extends JpaRepository<TournamentEntity,
     @Query(value = "DELETE FROM tournament_players WHERE tournament_id = :tournamentId", nativeQuery = true)
     void removeAllPlayers(UUID tournamentId);
 
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM tournament_players WHERE tournament_id = :tournamentId AND player_id IN (:playerIds)", nativeQuery = true)
+    void removePlayers(UUID tournamentId, List<UUID> playerIds);
+
     @Query(value = "SELECT player_id FROM tournament_players WHERE tournament_id = :tournamentId", nativeQuery = true)
     List<UUID> getAllPlayers(UUID tournamentId);
 
@@ -27,6 +32,11 @@ public interface TournamentJpaRepository extends JpaRepository<TournamentEntity,
     @Transactional
     @Query(value = "INSERT INTO tournament_pairs(tournament_id, pair_id) VALUES (:tournamentId, :pairId)", nativeQuery = true)
     void addPairToTournament(UUID tournamentId, UUID pairId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM tournament_pairs WHERE tournament_id = :tournamentId AND pair_id = :pairId", nativeQuery = true)
+    void removePairFromTournament(UUID tournamentId, UUID pairId);
 
     @Query(value = "SELECT p.id FROM pairs p JOIN tournament_pairs tp ON p.id = tp.pair_id WHERE tp.tournament_id = :tournamentId", nativeQuery = true)
     List<UUID> getAllPairs(UUID tournamentId);
