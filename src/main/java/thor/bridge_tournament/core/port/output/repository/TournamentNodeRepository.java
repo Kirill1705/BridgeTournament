@@ -18,4 +18,6 @@ public interface TournamentNodeRepository {
     List<Integer> getDealsNotPlayed(UUID nodeId);
 
     void addEntry(UUID nodeId, UUID boardEntryId);
+
+    boolean hasEntry(UUID nodeId, UUID boardEntryId);
 }

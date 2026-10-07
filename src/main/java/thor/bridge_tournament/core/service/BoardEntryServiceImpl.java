@@ -26,6 +26,7 @@ public class BoardEntryServiceImpl implements BoardEntryService {
 
     @Override
     public PairBoardResult addBoardEntryMp(UUID userId, int boardId, RawBoardEntry entry) {
-        throw new NotImplementedException();
+        return boardEntryManager.addBoardEntry(userId, boardId, entry, CountType.MP.createCalculator(),
+                null, null, CountType.MP.getFormatStandardName());
     }
 }

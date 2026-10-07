@@ -1,6 +1,7 @@
 package thor.bridge_tournament.presentation.telegram.session.state.entry;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
@@ -12,6 +13,7 @@ import thor.bridge_tournament.presentation.telegram.session.state.SessionState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 
 import java.util.List;
+import java.util.Locale;
 
 public class AddEntryCountTypeState implements SessionState<AddEntryData> {
     private final List<String> countTypes = List.of("IMP", "MP");
@@ -33,7 +35,14 @@ public class AddEntryCountTypeState implements SessionState<AddEntryData> {
 
     @Override
     public boolean handle(Update update, TelegramClient client, SessionWithState<AddEntryData> session) throws TelegramApiException {
-        String text = update.getMessage().getText().trim().toUpperCase();
+        if (update.hasCallbackQuery()) {
+            client.execute(AnswerCallbackQuery.builder().callbackQueryId(update.getCallbackQuery().getId()).build());
+            return false;
+        }
+        if (!update.hasMessage() || !update.getMessage().hasText()) {
+            return false;
+        }
+        String text = update.getMessage().getText().strip().toUpperCase(Locale.ROOT);
         if (!countTypes.contains(text)) {
             SendMessage message = SendMessage.builder()
                     .chatId(TelegramUtils.getChatId(update))

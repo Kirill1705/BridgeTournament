@@ -3,6 +3,7 @@ package thor.bridge_tournament.presentation.telegram.session.state.entry;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import thor.bridge_tournament.presentation.telegram.session.SessionWithState;
+import thor.bridge_tournament.presentation.telegram.session.state.SessionState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.Suit;
 
@@ -11,6 +12,19 @@ import java.util.List;
 
 public class LeadAddEntryState extends AbstractAddEntryState{
     private final List<String> owners = List.of("J", "Q", "K", "A");
+
+    public LeadAddEntryState() {
+        this(new ContractAddEntryState());
+    }
+
+    public LeadAddEntryState(SessionState<AddEntryData> previousState) {
+        super(previousState);
+    }
+
+    @Override
+    protected String getPrompt() {
+        return "Выберите кнопками масть и достоинство карты первого хода.";
+    }
 
     @Override
     public List<InlineKeyboardRow> getKeyboardRows() {
@@ -58,14 +72,9 @@ public class LeadAddEntryState extends AbstractAddEntryState{
         return deleted;
     }
 
-    @Override
-    protected void revert(SessionWithState<AddEntryData> session) {
-        session.updateState(new ContractAddEntryState());
-    }
-
     private boolean nextState(SessionWithState<AddEntryData> session) {
         if (session.getData().getCardSuit() != null && session.getData().getNominal() != null) {
-            session.updateState(new ResultAddEntryState());
+            session.updateState(new ResultAddEntryState(this));
         }
         return false;
     }

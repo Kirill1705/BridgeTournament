@@ -16,7 +16,12 @@ public interface BoardEntryJpaRepository extends JpaRepository<BoardEntryEntity,
     @EntityGraph(attributePaths = {"board", "writer", "ns.firstPlayer", "ns.secondPlayer", "ew.firstPlayer", "ew.secondPlayer"})
     List<BoardEntryEntity> findByBoardId(int boardId);
 
-    @Query(value = "SELECT be.id FROM board_entries be JOIN tournament_boards tb ON tb.board_id = be.board_id WHERE tb.tournament_id = :tournamentId AND be.removed = false", nativeQuery = true)
+    @Query(value = """
+            SELECT DISTINCT be.id FROM board_entries be
+            JOIN tournament_node_entries tne ON tne.board_entry_id = be.id
+            JOIN tournament_nodes tn ON tn.id = tne.node_id
+            WHERE tn.tournament_id = :tournamentId AND be.removed = false
+            """, nativeQuery = true)
     List<UUID> findIdsByTournamentId(UUID tournamentId);
 
     @Override

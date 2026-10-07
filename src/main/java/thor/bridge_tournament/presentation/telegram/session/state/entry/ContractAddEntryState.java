@@ -3,6 +3,7 @@ package thor.bridge_tournament.presentation.telegram.session.state.entry;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import thor.bridge_tournament.presentation.telegram.session.SessionWithState;
+import thor.bridge_tournament.presentation.telegram.session.state.SessionState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.Suit;
 
@@ -11,6 +12,19 @@ import java.util.List;
 
 public class ContractAddEntryState extends AbstractAddEntryState {
     private final List<String> directions = List.of("N", "S", "E", "W");
+
+    public ContractAddEntryState() {
+        this(new AddEntryBoardIdState());
+    }
+
+    public ContractAddEntryState(SessionState<AddEntryData> previousState) {
+        super(previousState);
+    }
+
+    @Override
+    protected String getPrompt() {
+        return "Выберите кнопками уровень и масть контракта, разыгрывающего или pass.";
+    }
 
     @Override
     public List<InlineKeyboardRow> getKeyboardRows() {
@@ -37,8 +51,9 @@ public class ContractAddEntryState extends AbstractAddEntryState {
     @Override
     protected boolean fillData(String callBackData, SessionWithState<AddEntryData> session) {
         if (callBackData.equals("pass")) {
+            session.getData().clearEntry();
             session.getData().setModifier(callBackData);
-            session.updateState(new ConfirmAddEntryState());
+            session.updateState(new ConfirmAddEntryState(this));
             return false;
         }
         if (callBackData.equalsIgnoreCase("xx") || callBackData.equalsIgnoreCase("x")) {
@@ -62,22 +77,18 @@ public class ContractAddEntryState extends AbstractAddEntryState {
 
     @Override
     protected boolean deleteData(AddEntryData data) {
-        boolean deleted = data.getContractSuit() != null || data.getDenomination() != null || data.getDeclarer() != null;
+        boolean deleted = data.getContractSuit() != null || data.getDenomination() != null || data.getDeclarer() != null || data.getModifier() != null;
         data.setContractSuit(null);
         data.setDeclarer(null);
         data.setDenomination(null);
+        data.setModifier(null);
         return deleted;
-    }
-
-    @Override
-    protected void revert(SessionWithState<AddEntryData> session) {
-        session.updateState(new AddEntryBoardIdState());
     }
 
     private boolean nextState(SessionWithState<AddEntryData> session) {
         AddEntryData data = session.getData();
         if ("pass".equalsIgnoreCase(data.getModifier()) || data.getContractSuit() != null && data.getDenomination() != null && data.getDeclarer() != null) {
-            session.updateState(new LeadAddEntryState());
+            session.updateState(new LeadAddEntryState(this));
         }
         return false;
     }

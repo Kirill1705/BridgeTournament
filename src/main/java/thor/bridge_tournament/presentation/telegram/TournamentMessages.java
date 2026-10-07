@@ -5,10 +5,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.core.port.dto.UserDto;
 import thor.bridge_tournament.core.port.dto.tournament.TournamentPlayers;
+import thor.bridge_tournament.core.port.dto.tournament_result.PairTournamentResultDto;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 public final class TournamentMessages {
@@ -67,6 +69,22 @@ public final class TournamentMessages {
         sortedUsers(players.playersWithOutPair()).forEach(player -> lines.add("• " + user(player)));
         if (players.playersWithOutPair().isEmpty()) {
             lines.add("Игроков без пары нет.");
+        }
+        sendLines(client, chatId, lines);
+    }
+
+    public static void results(TelegramClient client, long chatId, List<PairTournamentResultDto> results) throws TelegramApiException {
+        var lines = new ArrayList<String>();
+        lines.add("Текущие результаты турнира");
+        if (results.isEmpty()) {
+            lines.add("Результаты сдач ещё не записаны.");
+        } else {
+            lines.add(results.getFirst().countType().equals("MP") ? "Подсчёт: средний MP (%)" : "Подсчёт: сумма IMP");
+            for (var result : results) {
+                lines.add("\n" + result.rank() + ". " + user(result.pair().firstPlayer()) + " — " + user(result.pair().secondPlayer()));
+                lines.add(String.format(Locale.ROOT, "%.2f %s", result.points(), result.countType().equals("MP") ? "%" : "IMP"));
+            }
+            lines.add("\nПока ввод продолжается, очки и места могут меняться.");
         }
         sendLines(client, chatId, lines);
     }

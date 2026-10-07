@@ -38,8 +38,11 @@ public class AddEntryData {
     @Setter
     private String countType;
 
+    @Setter
+    private String boardLabel = "Идентификатор сдачи";
+
     public String toFormattedString() {
-        return "Контракт: " +
+        return boardLabel + ": " + boardNumber + "\nКонтракт: " +
                 toStringOrEmpty(denomination, String::valueOf) +
                 toStringOrEmpty(contractSuit, Suit::getFormattedString) +
                 toStringOrEmpty(modifier, modifier -> modifier) +
@@ -77,6 +80,17 @@ public class AddEntryData {
         }
         return toStringOrEmpty(cardSuit, Suit::toStandardString) +
                 toStringOrEmpty(nominal, nominal -> nominal);
+    }
+
+    public void clearEntry() {
+        contractSuit = null;
+        denomination = null;
+        modifier = null;
+        declarer = null;
+        cardSuit = null;
+        nominal = null;
+        sign = null;
+        result = null;
     }
 
     private <T> String toStringOrEmpty(T object, Function<T, String> mapFunction) {

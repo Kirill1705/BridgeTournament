@@ -50,4 +50,9 @@ public class TournamentNodeRepositoryImpl implements TournamentNodeRepository {
     public void addEntry(UUID nodeId, UUID boardEntryId) {
         repository.addEntry(nodeId, boardEntryId);
     }
+
+    @Override
+    public boolean hasEntry(UUID nodeId, UUID boardEntryId) {
+        return repository.hasEntry(nodeId, boardEntryId);
+    }
 }

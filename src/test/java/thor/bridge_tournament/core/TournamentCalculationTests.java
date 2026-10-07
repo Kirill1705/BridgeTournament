@@ -40,6 +40,32 @@ class TournamentCalculationTests {
     }
 
     @Test
+    void mpComparesScoresAndSplitsMatchpointsForTies() {
+        var low = entry("1C", 0);
+        var high = entry("4S", 0);
+        var equalHigh = entry("4S", 0);
+        var calculator = CountType.MP.createCalculator();
+        var results = calculator.calculate(List.of(low, high, equalHigh));
+        assertEquals(0d, results.get(low));
+        assertEquals(75d, results.get(high));
+        assertEquals(75d, results.get(equalHigh));
+        assertEquals(results, calculator.calculate(List.of(equalHigh, low, high)));
+    }
+
+    @Test
+    void mpCalculatesEachBoardSeparatelyAndUsesNeutralScoreForOneResult() {
+        var low = entry("1C", 0);
+        var high = entry("4S", 0);
+        var otherBoard = new BoardEntry(UUID.randomUUID(), new Board(2, 2, Direction.E, Vulnerable.NS),
+                ns, ew, new Contract("7NT"), Direction.N, null, 0, null);
+        var results = CountType.MP.createCalculator().calculate(List.of(low, high, otherBoard));
+        assertEquals(0d, results.get(low));
+        assertEquals(100d, results.get(high));
+        assertEquals(50d, results.get(otherBoard));
+        assertTrue(CountType.MP.createCalculator().calculate(List.of()).isEmpty());
+    }
+
+    @Test
     void trimsExtremePointsInsteadOfExtremeOvertricks() {
         BoardEntry partScore = entry("1C", 0);
         BoardEntry slam = entry("7NT", 0);

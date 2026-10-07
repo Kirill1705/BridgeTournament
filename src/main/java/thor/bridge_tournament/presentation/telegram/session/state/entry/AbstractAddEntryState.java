@@ -1,6 +1,8 @@
 package thor.bridge_tournament.presentation.telegram.session.state.entry;
 
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -14,6 +16,11 @@ import thor.bridge_tournament.presentation.telegram.session.state.entry.data.Add
 import java.util.List;
 
 public abstract class AbstractAddEntryState implements SessionState<AddEntryData> {
+    private final SessionState<AddEntryData> previousState;
+
+    protected AbstractAddEntryState(SessionState<AddEntryData> previousState) {
+        this.previousState = previousState;
+    }
 
     @Override
     public void sendInfo(TelegramClient client, long chatId, AddEntryData data) throws TelegramApiException {
@@ -22,12 +29,24 @@ public abstract class AbstractAddEntryState implements SessionState<AddEntryData
 
     @Override
     public boolean handle(Update update, TelegramClient client, SessionWithState<AddEntryData> session) throws TelegramApiException {
+        if (!update.hasCallbackQuery()) {
+            return false;
+        }
+        var callback = update.getCallbackQuery();
+        client.execute(AnswerCallbackQuery.builder().callbackQueryId(callback.getId()).build());
+        if (callback.getMessage() == null || callback.getMessage().getMessageId() != session.getData().getMessageId()) {
+            return false;
+        }
         String callBackData = update.getCallbackQuery().getData();
-        if (callBackData.equals("back")) {
+        if ("back".equals(callBackData)) {
             boolean deleted = deleteData(session.getData());
             if (!deleted) {
                 revert(session);
             }
+            return false;
+        }
+        if (getKeyboardRows().stream().flatMap(List::stream)
+                .noneMatch(button -> button.getCallbackData().equals(callBackData))) {
             return false;
         }
         return fillData(callBackData, session);
@@ -35,17 +54,18 @@ public abstract class AbstractAddEntryState implements SessionState<AddEntryData
 
     protected abstract List<InlineKeyboardRow> getKeyboardRows();
 
+    protected abstract String getPrompt();
+
     protected abstract boolean fillData(String callBackData, SessionWithState<AddEntryData> session);
 
     protected abstract boolean deleteData(AddEntryData data);
 
-    protected abstract void revert(SessionWithState<AddEntryData> session);
+    protected void revert(SessionWithState<AddEntryData> session) {
+        session.updateState(previousState);
+    }
 
     private void sendMessage(TelegramClient client, long chatId, AddEntryData data) throws TelegramApiException {
-        var messageBuilder = EditMessageText.builder()
-                .chatId(chatId)
-                .messageId(data.getMessageId())
-                .text(data.toFormattedString());
+        String text = data.toFormattedString() + "\n\n" + getPrompt();
         var builder = InlineKeyboardMarkup.builder();
         List<InlineKeyboardRow> rows = getKeyboardRows();
         for (InlineKeyboardRow row: rows) {
@@ -53,7 +73,12 @@ public abstract class AbstractAddEntryState implements SessionState<AddEntryData
         }
         builder.keyboardRow(new InlineKeyboardRow(InlineKeyboardButton.builder().callbackData("back").text("Назад").build()));
         InlineKeyboardMarkup keyboard = builder.build();
-        messageBuilder.replyMarkup(keyboard);
-        client.execute(messageBuilder.build());
+        if (data.getMessageId() == 0) {
+            data.setMessageId(client.execute(SendMessage.builder().chatId(chatId).text(text)
+                    .replyMarkup(keyboard).build()).getMessageId());
+        } else {
+            client.execute(EditMessageText.builder().chatId(chatId).messageId(data.getMessageId())
+                    .text(text).replyMarkup(keyboard).build());
+        }
     }
 }

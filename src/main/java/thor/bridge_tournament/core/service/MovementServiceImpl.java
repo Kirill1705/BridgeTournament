@@ -9,6 +9,7 @@ import thor.bridge_tournament.core.domain.board.BoardEntry;
 import thor.bridge_tournament.core.domain.movement.Movement;
 import thor.bridge_tournament.core.domain.movement.MovementValidator;
 import thor.bridge_tournament.core.domain.tournament.*;
+import thor.bridge_tournament.core.exception.DomainValidationException;
 import thor.bridge_tournament.core.exception.BoardNotFoundException;
 import thor.bridge_tournament.core.mapping.BoardEntryMapper;
 import thor.bridge_tournament.core.mapping.BoardMapper;
@@ -58,14 +59,18 @@ public class MovementServiceImpl implements MovementService {
     @Override
     public PairMovementNextRoundInfo getMovementNextRound(UUID userId) {
         Tournament tournament = currentTournamentManager.getByPlayerId(userId);
-        Optional<TournamentNode> node = tournamentGamesRepository.findNextNodeForPlayer(userId, tournament.getUuid());
-        PairDto opponents = getOpponents(node.get(), userId);
+        if (!tournament.isStarted()) {
+            throw new DomainValidationException("Турнир ещё не начался");
+        }
+        TournamentNode node = tournamentGamesRepository.findNextNodeForPlayer(userId, tournament.getUuid())
+                .orElseThrow(() -> new DomainValidationException("Для вас нет незаписанных сдач в расписании турнира"));
+        PairDto opponents = getOpponents(node, userId);
         return new PairMovementNextRoundInfo(new PairMovementEntryDto(
-                node.get().round(),
+                node.round(),
                 opponents,
-                node.get().table(),
-                node.get().boards()
-        ), tournamentGamesRepository.getDealsNotPlayed(node.get().id()));
+                node.table(),
+                node.boards()
+        ), tournamentGamesRepository.getDealsNotPlayed(node.id()));
     }
 
     @Override

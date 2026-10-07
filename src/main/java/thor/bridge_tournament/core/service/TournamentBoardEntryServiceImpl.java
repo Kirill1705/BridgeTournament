@@ -6,6 +6,8 @@ import thor.bridge_tournament.core.domain.CurrentTournamentManager;
 import thor.bridge_tournament.core.domain.tournament.Tournament;
 import thor.bridge_tournament.core.domain.tournament.TournamentNode;
 import thor.bridge_tournament.core.exception.BoardNotFoundException;
+import thor.bridge_tournament.core.exception.DomainValidationException;
+import thor.bridge_tournament.core.mapping.BoardEntryMapper;
 import thor.bridge_tournament.core.port.dto.board.BoardDto;
 import thor.bridge_tournament.core.port.dto.board.PairBoardResult;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
@@ -16,6 +18,8 @@ import thor.bridge_tournament.core.port.output.repository.TournamentNodeReposito
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class TournamentBoardEntryServiceImpl implements TournamentBoardEntryService {
@@ -26,16 +30,32 @@ public class TournamentBoardEntryServiceImpl implements TournamentBoardEntryServ
 
     @Override
     public PairBoardResult addTournamentBoardEntry(UUID userId, int boardNumber, RawBoardEntry entry) {
-        Tournament tournament = currentTournamentManager.getByPlayerId(userId);
-        Optional<BoardDto> boardDto = boardEntryManager.getBoardRepository().findByTournament(tournament.getUuid(), boardNumber);
-        if (boardDto.isEmpty()) {
-            throw new BoardNotFoundException(boardNumber);
-        }
-        Optional<TournamentNode> node = tournamentNodeRepository.findNode(userId, tournament.getUuid(), boardNumber);
         return transactionalManager.executeTransactional(() -> {
-            PairBoardResult result = boardEntryManager.addBoardEntry(userId, boardDto.get().id(), entry, tournament.getCountType().createCalculator(), node.get().ns(), node.get().ew(), tournament.getCountType().getFormatStandardName());
-            tournamentNodeRepository.addEntry(node.get().id(), result.entryId());
-            return result;
+            Tournament tournament = currentTournamentManager.getByPlayerId(userId);
+            if (!tournament.isStarted()) {
+                throw new DomainValidationException("Турнир ещё не начался");
+            }
+            BoardDto board = boardEntryManager.getBoardRepository().findByTournament(tournament.getUuid(), boardNumber)
+                    .orElseThrow(() -> new BoardNotFoundException(boardNumber));
+            TournamentNode node = tournamentNodeRepository.findNode(userId, tournament.getUuid(), boardNumber)
+                    .orElseThrow(() -> new DomainValidationException("Этой сдачи нет в расписании вашей пары"));
+            if (!tournamentNodeRepository.getDealsNotPlayed(node.id()).contains(boardNumber)) {
+                var written = boardEntryManager.getBoardEntryRepository().getEntryId(userId, board.id());
+                if (written.isEmpty() || !tournamentNodeRepository.hasEntry(node.id(), written.get())) {
+                    throw new DomainValidationException("Результат этой сдачи уже записан другим игроком");
+                }
+            }
+            var calculator = tournament.getCountType().createCalculator();
+            PairBoardResult result = boardEntryManager.addBoardEntry(userId, board.id(), entry, calculator,
+                    node.ns(), node.ew(), tournament.getCountType().getFormatStandardName());
+            tournamentNodeRepository.addEntry(node.id(), result.entryId());
+            var entries = boardEntryManager.getBoardEntryRepository().findByTournamentId(tournament.getUuid()).stream()
+                    .filter(record -> record.board().id().equals(board.id())).map(BoardEntryMapper::fromDto).toList();
+            var protocol = calculator.calculate(entries).entrySet().stream()
+                    .collect(Collectors.toMap(record -> BoardEntryMapper.toDto(record.getKey()), Map.Entry::getValue));
+            double points = protocol.entrySet().stream().filter(record -> record.getKey().id().equals(result.entryId()))
+                    .findFirst().orElseThrow().getValue();
+            return new PairBoardResult(result.entryId(), result.countType(), result.points(), points, protocol);
         });
     }
 }

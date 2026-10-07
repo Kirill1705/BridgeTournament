@@ -74,6 +74,9 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
 
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO tournament_node_entries(node_id, board_entry_id) VALUES (:nodeId, :boardEntryId)", nativeQuery = true)
+    @Query(value = "INSERT INTO tournament_node_entries(node_id, board_entry_id) VALUES (:nodeId, :boardEntryId) ON CONFLICT DO NOTHING", nativeQuery = true)
     void addEntry(UUID nodeId, UUID boardEntryId);
+
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM tournament_node_entries WHERE node_id = :nodeId AND board_entry_id = :boardEntryId)", nativeQuery = true)
+    boolean hasEntry(UUID nodeId, UUID boardEntryId);
 }

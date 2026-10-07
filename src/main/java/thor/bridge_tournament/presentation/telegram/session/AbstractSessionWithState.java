@@ -1,12 +1,14 @@
 package thor.bridge_tournament.presentation.telegram.session;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.presentation.telegram.TelegramUtils;
 import thor.bridge_tournament.presentation.telegram.session.state.SessionState;
 
+@Slf4j
 public abstract class AbstractSessionWithState<T> implements SessionWithState<T> {
     @Getter
     private final T data;
@@ -37,8 +39,9 @@ public abstract class AbstractSessionWithState<T> implements SessionWithState<T>
                 return true;
             }
             state.sendInfo(client, TelegramUtils.getChatId(update), data);
-        } catch (TelegramApiException _) {
-
+        } catch (TelegramApiException e) {
+            log.warn("Не удалось отправить шаг диалога {} в чат {}", state.getClass().getSimpleName(),
+                    TelegramUtils.getChatId(update), e);
         }
         return false;
     }

@@ -8,7 +8,7 @@ public enum CountType {
     public BoardCalculator createCalculator() {
         return switch (this) {
             case MEDIAN_IMPS -> new MedianImpsCalculator(0.1, ImpTranslationScale.createDefault());
-            default -> throw new NotImplementedException();
+            case MP -> new MpBoardCalculator();
         };
     }
 

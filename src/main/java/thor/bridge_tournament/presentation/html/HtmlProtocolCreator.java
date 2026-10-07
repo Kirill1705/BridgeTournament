@@ -10,6 +10,7 @@ import thor.bridge_tournament.core.port.dto.tournament.PairDto;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -36,10 +37,10 @@ public class HtmlProtocolCreator {
             createRow(entry.getKey(), table, entry.getValue());
         }
         try {
-            File file = new File("protocol.html");
-            FileWriter writer = new FileWriter(file);
-            writer.write(document.outerHtml());
-            writer.close();
+            File file = File.createTempFile("bridge-protocol-", ".html");
+            try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+                writer.write(document.outerHtml());
+            }
             return file;
 
         } catch (IOException e) {
