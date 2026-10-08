@@ -4,20 +4,21 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import thor.bridge_tournament.core.port.dto.board.PairBoardResult;
 import thor.bridge_tournament.core.port.dto.board.RawBoardEntry;
-import thor.bridge_tournament.core.port.input.MovementService;
 import thor.bridge_tournament.core.port.input.TournamentBoardEntryService;
+import thor.bridge_tournament.core.port.input.TournamentService;
+import thor.bridge_tournament.core.port.input.UserService;
 import thor.bridge_tournament.presentation.html.HtmlProtocolCreator;
-import thor.bridge_tournament.presentation.telegram.session.state.entry.AddTournamentEntryBoardNumberState;
+import thor.bridge_tournament.presentation.telegram.session.state.entry.AddTournamentEntryByTdPlayersState;
 import thor.bridge_tournament.presentation.telegram.session.state.entry.data.AddEntryData;
 
 import java.util.UUID;
 
-public class AddTournamentEntrySession extends AbstractAddEntrySession {
+public class AddTournamentEntryByTdSession extends AbstractAddEntrySession {
     private final TournamentBoardEntryService service;
 
-    public AddTournamentEntrySession(Update update, TelegramClient client, TournamentBoardEntryService service,
-                                     MovementService movements, HtmlProtocolCreator creator, UUID userId) {
-        super(update, client, creator, userId, new AddTournamentEntryBoardNumberState(movements, userId), createData());
+    public AddTournamentEntryByTdSession(Update update, TelegramClient client, TournamentBoardEntryService service,
+                                         TournamentService tournaments, UserService users, HtmlProtocolCreator creator, UUID tdId) {
+        super(update, client, creator, tdId, new AddTournamentEntryByTdPlayersState(tournaments, users, tdId), createData());
         this.service = service;
     }
 
@@ -29,6 +30,8 @@ public class AddTournamentEntrySession extends AbstractAddEntrySession {
 
     @Override
     protected PairBoardResult saveEntry(RawBoardEntry entry) {
-        return service.addTournamentBoardEntryForPlayer(userId, getData().getBoardNumber(), entry);
+        var data = getData();
+        return service.addTournamentBoardEntryByTd(userId, data.getBoardNumber(), entry,
+                data.getFirstPairPlayer().id(), data.getSecondPairPlayer().id());
     }
 }

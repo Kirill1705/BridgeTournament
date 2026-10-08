@@ -15,6 +15,8 @@ public interface TournamentNodeRepository {
 
     Optional<TournamentNode> findNode(UUID playerId, UUID tournamentId, int boardNumber);
 
+    void lock(UUID nodeId);
+
     List<Integer> getDealsNotPlayed(UUID nodeId);
 
     void addEntry(UUID nodeId, UUID boardEntryId);

@@ -63,8 +63,7 @@ class TournamentBoardEntryServiceTests {
         when(boards.findByTournament(tournamentId, 7)).thenReturn(Optional.of(board));
         when(boards.getById(board.id())).thenReturn(Optional.of(board));
         when(nodes.findNode(player.id(), tournamentId, 7)).thenReturn(Optional.of(node));
-        when(nodes.getDealsNotPlayed(node.id())).thenReturn(List.of(7, 8));
-        when(entries.getEntryId(player.id(), board.id())).thenReturn(Optional.empty());
+        when(entries.findByMeeting(node.id(), board.id())).thenReturn(Optional.empty());
         when(entries.save(any())).thenReturn(entryId);
         when(entries.findByBoardId(board.id())).thenReturn(List.of(savedEntry()));
         when(entries.findByTournamentId(tournamentId)).thenReturn(List.of(savedEntry()));
@@ -74,7 +73,7 @@ class TournamentBoardEntryServiceTests {
     @ValueSource(strings = {"IMP", "MP"})
     void savesWithInitiatorAsWriterAndMeetingPairsWithoutSubstitutingDirectorOrPartner(String countType) {
         when(current.getByPlayerId(player.id())).thenReturn(tournament(countType));
-        var result = service.addTournamentBoardEntry(player.id(), 7, raw);
+        var result = service.addTournamentBoardEntryForPlayer(player.id(), 7, raw);
 
         var saved = ArgumentCaptor.forClass(BoardEntryDto.class);
         verify(entries).save(saved.capture());
@@ -94,7 +93,7 @@ class TournamentBoardEntryServiceTests {
         when(current.getByPlayerId(ownerId)).thenThrow(new TournamentNotFoundException(ownerId));
         when(current.getByTd(ownerId)).thenReturn(tournament("IMP"));
 
-        assertThrows(TournamentNotFoundException.class, () -> service.addTournamentBoardEntry(ownerId, 7, raw));
+        assertThrows(TournamentNotFoundException.class, () -> service.addTournamentBoardEntryForPlayer(ownerId, 7, raw));
         verify(current, never()).getByTd(any());
         verify(entries, never()).save(any());
         verify(nodes, never()).addEntry(any(), any());
@@ -103,34 +102,31 @@ class TournamentBoardEntryServiceTests {
     @Test
     void cannotEnterABoardOutsideInitiatorsPairSchedule() {
         when(nodes.findNode(player.id(), tournamentId, 7)).thenReturn(Optional.empty());
-        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntry(player.id(), 7, raw));
+        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntryForPlayer(player.id(), 7, raw));
         verify(entries, never()).save(any());
         verify(nodes, never()).addEntry(any(), any());
     }
 
     @Test
     void cannotOverwriteAnotherPlayersResultInTheMeeting() {
-        when(nodes.getDealsNotPlayed(node.id())).thenReturn(List.of(8));
-        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntry(player.id(), 7, raw));
+        when(entries.findByMeeting(node.id(), board.id())).thenReturn(Optional.of(otherPlayersEntry()));
+        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntryForPlayer(player.id(), 7, raw));
         verify(entries, never()).save(any());
         verify(nodes, never()).addEntry(any(), any());
     }
 
     @Test
     void standaloneEntryWithSameAuthorAndBoardDoesNotAuthorizeEditingOthersTournamentResult() {
-        when(nodes.getDealsNotPlayed(node.id())).thenReturn(List.of(8));
         when(entries.getEntryId(player.id(), board.id())).thenReturn(Optional.of(entryId));
-        when(nodes.hasEntry(node.id(), entryId)).thenReturn(false);
-        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntry(player.id(), 7, raw));
+        when(entries.findByMeeting(node.id(), board.id())).thenReturn(Optional.of(otherPlayersEntry()));
+        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntryForPlayer(player.id(), 7, raw));
         verify(entries, never()).save(any());
     }
 
     @Test
     void authorCanUpdateTheirOwnResultInTheSameMeeting() {
-        when(nodes.getDealsNotPlayed(node.id())).thenReturn(List.of(8));
-        when(entries.getEntryId(player.id(), board.id())).thenReturn(Optional.of(entryId));
-        when(nodes.hasEntry(node.id(), entryId)).thenReturn(true);
-        assertEquals(entryId, service.addTournamentBoardEntry(player.id(), 7, raw).entryId());
+        when(entries.findByMeeting(node.id(), board.id())).thenReturn(Optional.of(savedEntry()));
+        assertEquals(entryId, service.addTournamentBoardEntryForPlayer(player.id(), 7, raw).entryId());
         var saved = ArgumentCaptor.forClass(BoardEntryDto.class);
         verify(entries).save(saved.capture());
         assertEquals(entryId, saved.getValue().id());
@@ -143,7 +139,7 @@ class TournamentBoardEntryServiceTests {
         tournament = new Tournament(ownerId, 8, 4, "Tournament", tournamentId, tournament.getTds(),
                 tournament.getCountType(), false);
         when(current.getByPlayerId(player.id())).thenReturn(tournament);
-        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntry(player.id(), 7, raw));
+        assertThrows(DomainValidationException.class, () -> service.addTournamentBoardEntryForPlayer(player.id(), 7, raw));
         verify(entries, never()).save(any());
     }
 
@@ -153,7 +149,7 @@ class TournamentBoardEntryServiceTests {
         when(current.getByPlayerId(player.id())).thenReturn(tournament(countType));
         var unrelated = new BoardEntryDto(UUID.randomUUID(), board, ns, ew, ns.firstPlayer(), "7NT", "N", null, 0, 0);
         when(entries.findByBoardId(board.id())).thenReturn(List.of(savedEntry(), unrelated));
-        var result = service.addTournamentBoardEntry(player.id(), 7, raw);
+        var result = service.addTournamentBoardEntryForPlayer(player.id(), 7, raw);
         assertEquals(1, result.protocol().size());
         assertEquals(entryId, result.protocol().keySet().iterator().next().id());
         assertEquals(countType.equals("MP") ? 50d : 0d, result.duplicatePoints());
@@ -166,6 +162,10 @@ class TournamentBoardEntryServiceTests {
 
     private BoardEntryDto savedEntry() {
         return new BoardEntryDto(entryId, board, ns, ew, player, raw.contract(), raw.declarer(), raw.lead(), raw.result(), 420);
+    }
+
+    private BoardEntryDto otherPlayersEntry() {
+        return new BoardEntryDto(entryId, board, ns, ew, ns.firstPlayer(), raw.contract(), raw.declarer(), raw.lead(), raw.result(), 420);
     }
 
     private UserDto player(String username) {

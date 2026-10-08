@@ -41,6 +41,11 @@ public class TournamentNodeRepositoryImpl implements TournamentNodeRepository {
     }
 
     @Override
+    public void lock(UUID nodeId) {
+        repository.lockNode(nodeId);
+    }
+
+    @Override
     public List<Integer> getDealsNotPlayed(UUID nodeId) {
         return repository.findNotPlayedDeals(nodeId);
     }

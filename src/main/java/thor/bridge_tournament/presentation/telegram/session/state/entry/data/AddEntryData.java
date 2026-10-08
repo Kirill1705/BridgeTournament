@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import thor.bridge_tournament.core.port.dto.UserDto;
+import thor.bridge_tournament.presentation.telegram.TournamentMessages;
 
 import java.util.function.Function;
 
@@ -41,8 +43,16 @@ public class AddEntryData {
     @Setter
     private String boardLabel = "Идентификатор сдачи";
 
+    @Setter
+    private UserDto firstPairPlayer;
+    @Setter
+    private UserDto secondPairPlayer;
+
     public String toFormattedString() {
-        return boardLabel + ": " + boardNumber + "\nКонтракт: " +
+        String meeting = firstPairPlayer == null || secondPairPlayer == null ? ""
+                : "Судейский ввод. Игроки выбранных пар: " + TournamentMessages.user(firstPairPlayer)
+                + " — " + TournamentMessages.user(secondPairPlayer) + "\n";
+        return meeting + boardLabel + ": " + boardNumber + "\nКонтракт: " +
                 toStringOrEmpty(denomination, String::valueOf) +
                 toStringOrEmpty(contractSuit, Suit::getFormattedString) +
                 toStringOrEmpty(modifier, modifier -> modifier) +

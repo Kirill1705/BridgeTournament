@@ -69,14 +69,14 @@ class TournamentBoardEntryCommandsTests {
                 new PairMovementEntryDto(2, null, 3, List.of(7, 8)), List.of(7, 8)));
         when(protocols.create(anyMap(), anyString())).thenAnswer(invocation ->
                 Files.createTempFile(tempDir, "protocol-", ".html").toFile());
-        when(entries.addTournamentBoardEntry(eq(playerId), eq(7), any()))
+        when(entries.addTournamentBoardEntryForPlayer(eq(playerId), eq(7), any()))
                 .thenReturn(new PairBoardResult(UUID.randomUUID(), "IMP", 450, 0, Map.of()));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"IMP", "MP"})
     void fullWizardKeepsCommandAuthorsUuidAndSavesOnlyAfterConfirmation(String countType) throws Exception {
-        when(entries.addTournamentBoardEntry(eq(playerId), eq(7), any()))
+        when(entries.addTournamentBoardEntryForPlayer(eq(playerId), eq(7), any()))
                 .thenReturn(new PairBoardResult(UUID.randomUUID(), countType, 450, 50, Map.of()));
         var dispatcher = dispatcher();
         var session = dispatcher.handle(message("/addtournamententry"), client, "addtournamententry").orElseThrow();
@@ -93,7 +93,7 @@ class TournamentBoardEntryCommandsTests {
         assertTrue(session.handleMessage(button("ok"), client));
 
         verify(identities).resolveOrRegister(new ExternalIdentity(IdentityProvider.TELEGRAM, "5000000001"), null);
-        verify(entries).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("4S", "N", "CK", 1));
+        verify(entries).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("4S", "N", "CK", 1));
         verify(protocols).create(Map.of(), countType);
         verify(client).execute(any(SendDocument.class));
     }
@@ -165,7 +165,7 @@ class TournamentBoardEntryCommandsTests {
         assertTrue(buttons().contains("SPADES"));
         assertFalse(session.handleMessage(button("pass"), client));
         assertTrue(session.handleMessage(button("ok"), client));
-        verify(entries).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("pass", null, null, 0));
+        verify(entries).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("pass", null, null, 0));
     }
 
     @Test
@@ -178,7 +178,7 @@ class TournamentBoardEntryCommandsTests {
         assertFalse(session.handleMessage(button("pass"), client));
         verifyNoInteractions(entries);
         assertTrue(session.handleMessage(button("ok"), client));
-        verify(entries).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("pass", null, null, 0));
+        verify(entries).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("pass", null, null, 0));
     }
 
     @Test
@@ -196,7 +196,7 @@ class TournamentBoardEntryCommandsTests {
         assertFalse(session.handleMessage(foreign, client));
         verifyNoInteractions(entries);
         assertTrue(session.handleMessage(button("ok"), client));
-        verify(entries).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("4S", "N", "CK", 0));
+        verify(entries).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("4S", "N", "CK", 0));
     }
 
     @Test
@@ -225,7 +225,7 @@ class TournamentBoardEntryCommandsTests {
                 .thenReturn(message("protocol").getMessage());
         assertFalse(session.handleMessage(button("ok"), client));
         assertTrue(session.handleMessage(button("ok"), client));
-        verify(entries, times(1)).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("pass", null, null, 0));
+        verify(entries, times(1)).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("pass", null, null, 0));
     }
 
     @Test
@@ -240,7 +240,7 @@ class TournamentBoardEntryCommandsTests {
             verifyNoInteractions(entries);
             bot.consume(button("pass"));
             bot.consume(button("ok"));
-            verify(entries).addTournamentBoardEntry(playerId, 7, new RawBoardEntry("pass", null, null, 0));
+            verify(entries).addTournamentBoardEntryForPlayer(playerId, 7, new RawBoardEntry("pass", null, null, 0));
             verify(clients.constructed().getFirst()).execute(any(SendDocument.class));
         }
     }

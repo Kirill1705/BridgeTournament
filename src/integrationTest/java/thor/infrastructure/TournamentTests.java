@@ -84,23 +84,23 @@ class TournamentTests {
             String otherPlayer = "p" + i + "a";
             var otherNode = nodes.findNode(user(otherPlayer), tournamentId, firstBoard).orElseThrow();
             if (!otherNode.id().equals(firstNode.id())) {
-                entries.addTournamentBoardEntry(user(otherPlayer), firstBoard, new RawBoardEntry("4S", "N", "cK", 1));
+                entries.addTournamentBoardEntryForPlayer(user(otherPlayer), firstBoard, new RawBoardEntry("4S", "N", "cK", 1));
                 break;
             }
         }
         assertEquals(first.dealsNotPlayed(), nodes.getDealsNotPlayed(firstNode.id()));
-        entries.addTournamentBoardEntry(user("p1a"), firstBoard, new RawBoardEntry("4S", "N", "cK", 0));
+        entries.addTournamentBoardEntryForPlayer(user("p1a"), firstBoard, new RawBoardEntry("4S", "N", "cK", 0));
         var partial = movements.getMovementNextRound(user("p1a"));
         assertEquals(1, partial.movementEntry().round());
         assertEquals(List.of(secondBoard), partial.dealsNotPlayed());
-        entries.addTournamentBoardEntry(user("p1a"), secondBoard, new RawBoardEntry("3NT", "N", "cK", 0));
+        entries.addTournamentBoardEntryForPlayer(user("p1a"), secondBoard, new RawBoardEntry("3NT", "N", "cK", 0));
         assertEquals(2, movements.getMovementNextRound(user("p1a")).movementEntry().round());
         assertTrue(nodes.getDealsNotPlayed(firstNode.id()).isEmpty());
         for (int round = 2; round <= 4; round++) {
             var next = movements.getMovementNextRound(user("p1a"));
             assertEquals(round, next.movementEntry().round());
             for (int board : next.dealsNotPlayed()) {
-                entries.addTournamentBoardEntry(user("p1a"), board, new RawBoardEntry("pass", null, null, 0));
+                entries.addTournamentBoardEntryForPlayer(user("p1a"), board, new RawBoardEntry("pass", null, null, 0));
             }
         }
         assertTrue(nodes.findNextNodeForPlayer(playerId, tournamentId).isEmpty());

@@ -9,6 +9,8 @@ import java.util.UUID;
 public interface BoardEntryRepository {
     Optional<UUID> getEntryId(UUID writerId, int boardId);
 
+    Optional<BoardEntryDto> findByMeeting(UUID nodeId, int boardId);
+
     UUID save(BoardEntryDto boardEntry);
 
     List<BoardEntryDto> findByBoardId(int boardId);

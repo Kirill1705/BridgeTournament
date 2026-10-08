@@ -24,6 +24,11 @@ public class BoardEntryRepositoryImpl implements BoardEntryRepository {
     }
 
     @Override
+    public Optional<BoardEntryDto> findByMeeting(UUID nodeId, int boardId) {
+        return repository.findByMeeting(nodeId, boardId).map(mapper::toDto);
+    }
+
+    @Override
     @Transactional
     public UUID save(BoardEntryDto boardEntry) {
         return repository.save(mapper.toJpa(boardEntry)).getId();

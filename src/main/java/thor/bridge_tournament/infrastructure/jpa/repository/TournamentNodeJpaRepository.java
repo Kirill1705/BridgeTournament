@@ -39,6 +39,9 @@ public interface TournamentNodeJpaRepository extends JpaRepository<TournamentNod
         """)
     Optional<TournamentNodeEntity> findByPlayerTournamentBoardNumber(UUID playerId, UUID tournamentId, int boardNumber);
 
+    @Query(value = "SELECT id FROM tournament_nodes WHERE id = :nodeId FOR UPDATE", nativeQuery = true)
+    UUID lockNode(UUID nodeId);
+
     @Query("""
         SELECT tnb FROM TournamentNodeEntity tn
         JOIN tn.boards tnb

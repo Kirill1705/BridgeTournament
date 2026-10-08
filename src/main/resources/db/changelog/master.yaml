@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changeset/004-provider-usernames.sql
   - include:
       file: db/changelog/changeset/005-user-provider-uniqueness.sql
+  - include:
+      file: db/changelog/changeset/006-tournament-entry-authors.sql
